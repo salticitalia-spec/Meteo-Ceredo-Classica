@@ -54,7 +54,6 @@ def get_all_data():
     
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
-    # Storico orario per avere il grafico dettagliato
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&daily=precipitation_sum,sunshine_duration&timezone=Europe%2FRome"
     
     return requests.get(url_fc).json(), requests.get(url_hist).json()
@@ -63,7 +62,7 @@ try:
     data_fc, data_hist = get_all_data()
     curr = data_fc['current_weather']
 except:
-    st.error("Errore nel caricamento dati API.")
+    st.error("Errore API")
     st.stop()
 
 st.title("🧗 METEO CEREDOLESO")
@@ -96,7 +95,7 @@ for i in range(3):
     t_max = data_fc['daily']['temperature_2m_max'][i]
     rain = data_fc['daily']['precipitation_sum'][i]
     wind = data_fc['daily']['wind_speed_10m_max'][i]
-    irr_sum = round(data_fc['daily']['shortwave_radiation_sum'][i], 1)
+    irr_sum = round(data_fc['daily']['shortwave_radiation_sum'][i] / 1000, 2) # In MJ/m2
     
     st.markdown(f"""
         <div class="daily-card">
@@ -112,13 +111,13 @@ for i in range(3):
 
 st.write("---")
 
-# --- 4. GRAFICO UNIFICATO (PREVISIONI 72h) ---
+# --- 4. GRAFICO UNIFICATO PREVISIONI (MW/m2) ---
 st.subheader("📊 Analisi Combinata (72h)")
-st.markdown("<small>🟨 kW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
+st.markdown("<small>🟨 MW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
 
 df_fc_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
-    'kW/m²': [x / 1000 for x in data_fc['hourly']['shortwave_radiation'][:72]],
+    'MW/m²': [x / 1000000 for x in data_fc['hourly']['shortwave_radiation'][:72]],
     'Pioggia (mm)': data_fc['hourly']['precipitation'][:72],
     'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
@@ -127,7 +126,7 @@ st.line_chart(df_fc_chart, color=["#FFCC00", "#00CCFF", "#00FF00"])
 
 st.write("---")
 
-# --- 5. MOSTRO BOVINO INDEX ---
+# --- 5. MOSTR0 BOVINO INDEX ---
 st.header("🐂 MOSTRO BOVINO INDEX")
 def get_bovino_score(day_offset, boost):
     h_rain = sum(data_hist['daily']['precipitation_sum'])
@@ -161,13 +160,13 @@ for day in range(3):
 
 st.write("---")
 
-# --- 6. STORICO 10 GIORNI (GRAFICO UNIFICATO) ---
+# --- 6. STORICO 10 GIORNI (IDENTICO AL SOPRA) ---
 st.subheader("📊 Storico 10 Giorni")
-st.markdown("<small>🟨 kW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
+st.markdown("<small>🟨 MW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
 
 df_hist_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_hist['hourly']['time']),
-    'kW/m²': [x / 1000 for x in data_hist['hourly']['shortwave_radiation']],
+    'MW/m²': [x / 1000000 for x in data_hist['hourly']['shortwave_radiation']],
     'Pioggia (mm)': data_hist['hourly']['precipitation'],
     'Vento (km/h)': data_hist['hourly']['windspeed_10m']
 }).set_index('Data')
