@@ -51,16 +51,19 @@ st.markdown("""
 def get_all_data():
     lat, lon = 45.6117, 10.9710
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunshine_duration,shortwave_radiation_sum&timezone=Europe%2FRome"
+    
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
-    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum,wind_speed_10m_max,sunshine_duration&timezone=Europe%2FRome"
+    # Storico orario per avere il grafico dettagliato
+    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&daily=precipitation_sum,sunshine_duration&timezone=Europe%2FRome"
+    
     return requests.get(url_fc).json(), requests.get(url_hist).json()
 
 try:
     data_fc, data_hist = get_all_data()
     curr = data_fc['current_weather']
 except:
-    st.error("Errore API")
+    st.error("Errore nel caricamento dati API.")
     st.stop()
 
 st.title("🧗 METEO CEREDOLESO")
@@ -109,18 +112,18 @@ for i in range(3):
 
 st.write("---")
 
-# --- 4. GRAFICO UNIFICATO OTTIMIZZATO ---
+# --- 4. GRAFICO UNIFICATO (PREVISIONI 72h) ---
 st.subheader("📊 Analisi Combinata (72h)")
 st.markdown("<small>🟨 kW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
 
-df_chart = pd.DataFrame({
+df_fc_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
-    'Irraggiamento (kW/m²)': [x / 1000 for x in data_fc['hourly']['shortwave_radiation'][:72]],
+    'kW/m²': [x / 1000 for x in data_fc['hourly']['shortwave_radiation'][:72]],
     'Pioggia (mm)': data_fc['hourly']['precipitation'][:72],
     'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
 
-st.line_chart(df_chart, color=["#FFCC00", "#00CCFF", "#00FF00"])
+st.line_chart(df_fc_chart, color=["#FFCC00", "#00CCFF", "#00FF00"])
 
 st.write("---")
 
@@ -155,6 +158,21 @@ for day in range(3):
                     <span class="sector-perc" style="color:{color};">{min_p}-{max_p}%</span>
                 </div>
             """, unsafe_allow_html=True)
+
+st.write("---")
+
+# --- 6. STORICO 10 GIORNI (GRAFICO UNIFICATO) ---
+st.subheader("📊 Storico 10 Giorni")
+st.markdown("<small>🟨 kW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
+
+df_hist_chart = pd.DataFrame({
+    'Data': pd.to_datetime(data_hist['hourly']['time']),
+    'kW/m²': [x / 1000 for x in data_hist['hourly']['shortwave_radiation']],
+    'Pioggia (mm)': data_hist['hourly']['precipitation'],
+    'Vento (km/h)': data_hist['hourly']['windspeed_10m']
+}).set_index('Data')
+
+st.line_chart(df_hist_chart, color=["#FFCC00", "#00CCFF", "#00FF00"])
 
 if st.button("🔄 AGGIORNA"):
     st.rerun()
