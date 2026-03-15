@@ -111,14 +111,14 @@ for i in range(3):
 
 st.write("---")
 
-# --- 4. GRAFICO PREVISIONI (PIOGGIA X10) ---
+# --- 4. GRAFICO PREVISIONI (PIOGGIA X10, IRRAGG. W/50) ---
 st.subheader("📊 Analisi Combinata (72h)")
-st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/25)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
+st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
 df_fc_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
     'Pioggia (x10)': [x * 10 for x in data_fc['hourly']['precipitation'][:72]],
-    'Irraggiamento (W/25)': [x / 25 for x in data_fc['hourly']['shortwave_radiation'][:72]],
+    'Irraggiamento (W/50)': [x / 50 for x in data_fc['hourly']['shortwave_radiation'][:72]],
     'Vento': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
 
@@ -141,7 +141,7 @@ settori = [
     ("🎋 SUPERCANNA", 70, 5, 1.28, "Sole: 10:30 → 15:00"),
     ("🧠 CEREDOLESO", 77, 3, 1.10, "Sole: 12:00 → 16:00"),
     ("🏺 OSTRAMANDRA", 60, 6, 0.80, "Sole: 13:30 → 16:30")
-]
+)
 
 tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
 for day in range(3):
@@ -160,14 +160,14 @@ for day in range(3):
 
 st.write("---")
 
-# --- 6. STORICO 10 GIORNI (PIOGGIA X10) ---
+# --- 6. STORICO 10 GIORNI (PIOGGIA X10, IRRAGG. W/50) ---
 st.subheader("📊 Storico 10 Giorni")
-st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/25)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
+st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
 df_hist_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_hist['hourly']['time']),
     'Pioggia (x10)': [x * 10 for x in data_hist['hourly']['precipitation']],
-    'Irraggiamento (W/25)': [x / 25 for x in data_hist['hourly']['shortwave_radiation']],
+    'Irraggiamento (W/50)': [x / 50 for x in data_hist['hourly']['shortwave_radiation']],
     'Vento': data_hist['hourly']['windspeed_10m']
 }).set_index('Data')
 
