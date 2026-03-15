@@ -13,13 +13,11 @@ st.markdown("""
     .stApp { background-color: #000000 !important; }
     h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Helvetica', sans-serif; }
     
-    /* Box Condizioni Ora */
     .current-meteo {
         background-color: #111; border: 2px solid #FFFFFF; padding: 12px;
         border-radius: 12px; text-align: center; margin-bottom: 15px;
     }
     
-    /* Card Triorarie Super Piccole */
     .hourly-card {
         background-color: #111; border-left: 3px solid #444; padding: 4px 10px;
         border-radius: 6px; margin-bottom: 3px; display: flex; 
@@ -28,13 +26,11 @@ st.markdown("""
     }
     .hourly-card.rain { border-left: 3px solid #00CCFF; background-color: #001a33; }
     
-    /* Box 3 Giorni Compatto */
     .daily-box {
         background-color: #111; border: 1px solid #333; padding: 6px;
         border-radius: 6px; margin-bottom: 5px; font-size: 12px;
     }
 
-    /* Righe Mostro Bovino */
     .bovino-row {
         display: flex; justify-content: space-between; align-items: center;
         padding: 8px 5px; border-bottom: 1px solid #222;
@@ -43,7 +39,6 @@ st.markdown("""
     .sector-perc { font-size: 19px; font-weight: 900; }
     .sun-info { font-size: 9px; color: #FFCC00 !important; display: block; text-transform: uppercase; }
     
-    /* Grafici */
     [data-testid="stChart"] { height: 140px !important; }
     .stTabs [data-baseweb="tab"] { font-size: 14px !important; padding: 10px 5px !important; }
     </style>
@@ -158,10 +153,17 @@ for day in range(3):
 
 st.write("---")
 
-# --- 5. STORICO GRAFICI ---
-st.subheader("📊 Storico 10gg")
+# --- 5. STORICO 10GG (CON TITOLI) ---
+st.subheader("📊 Storico 10 Giorni")
 dates_h = [d[-5:] for d in data_hist['daily']['time']]
+
+st.markdown("🔹 **Piovosità Giornaliera (mm)**")
 st.bar_chart(pd.DataFrame({'D': dates_h, 'mm': data_hist['daily']['precipitation_sum']}), x='D', y='mm', color="#00CCFF")
+
+st.markdown("🔹 **Vento Massimo (km/h)**")
+st.line_chart(pd.DataFrame({'D': dates_h, 'kmh': data_hist['daily']['wind_speed_10m_max']}), x='D', y='kmh', color="#00FF00")
+
+st.markdown("🔹 **Radiazione Solare (W/m²)**")
 st.area_chart(pd.DataFrame({'T': data_hourly_hist['hourly']['time'], 'W': data_hourly_hist['hourly']['shortwave_radiation']}).set_index('T'), color="#FFFF00")
 
 if st.button("🔄 AGGIORNA"):
