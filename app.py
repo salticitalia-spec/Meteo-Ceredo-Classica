@@ -13,7 +13,7 @@ if os.path.exists("icona.png"):
 else:
     st.set_page_config(page_title="Meteo Ceredo Pro", page_icon="🧗")
 
-# CSS Avanzato per il "Mostro Bovino Fill"
+# CSS per il layout "Mostro Bovino"
 st.markdown("""
     <style>
     .meteo-card {
@@ -37,18 +37,15 @@ st.markdown("""
         align-items: center;
         margin-bottom: 8px;
     }
-    .bovino-name { font-size: 20px; font-weight: bold; color: white; }
-    .bovino-perc { font-size: 22px; font-weight: bold; }
+    .bovino-name { font-size: 18px; font-weight: bold; color: white; }
+    .bovino-perc { font-size: 20px; font-weight: bold; }
     
-    /* Barra di riempimento stile Mostro */
     .progress-bg {
         background-color: #444;
         border-radius: 20px;
         width: 100%;
         height: 12px;
         overflow: hidden;
-        display: flex;
-        align-items: center;
     }
     .progress-fill {
         height: 100%;
@@ -58,7 +55,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🧗 Meteo Ceredo - Mostro Bovino")
+st.title("🧗 Meteo Ceredo")
 
 # --- FUNZIONI DATI ---
 def get_weather_info(code):
@@ -100,7 +97,8 @@ for i in range(3):
         st.markdown(f'<div class="meteo-card"><b>{giorno}</b><br><span style="font-size:30px">{ico}</span><br><small>{txt}</small></div>', unsafe_allow_html=True)
 
 st.write("---")
-st.header("🐂 ANALISI ASCIUGATURA")
+# TITOLO AGGIORNATO
+st.header("🐂 Mostro Bovino Index (analisi asciugatura)")
 
 tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
 
@@ -110,11 +108,8 @@ for day in range(3):
             bias = get_bovino_score(day, boost)
             prob = int(base + (bias * 100))
             min_p, max_p = np.clip([prob-toll, prob+toll], 0, 100)
-            
-            # Colore dinamico
             color = "#28a745" if min_p > 70 else "#fd7e14" if min_p > 50 else "#dc3545"
             
-            # HTML con icona toro e barra "Mostro"
             st.markdown(f"""
                 <div class="bovino-container">
                     <div class="bovino-header">
@@ -127,5 +122,5 @@ for day in range(3):
                 </div>
             """, unsafe_allow_html=True)
 
-if st.button("🔄 AGGIORNA"):
+if st.button("🔄 AGGIORNA DATI"):
     st.rerun()
