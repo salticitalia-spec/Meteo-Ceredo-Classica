@@ -24,7 +24,6 @@ st.markdown("""
         justify-content: space-between; align-items: center;
         height: 28px; font-size: 11px;
     }
-    .hourly-card.rain { border-left: 2px solid #00CCFF; background-color: #000d1a; }
     
     .daily-card {
         background-color: #111; border: 1px solid #444; padding: 15px;
@@ -44,7 +43,7 @@ st.markdown("""
     .sector-perc { font-size: 22px; font-weight: 900; }
     .sun-info { font-size: 10px; color: #FFCC00 !important; display: block; }
     
-    [data-testid="stChart"] { height: 250px !important; }
+    [data-testid="stChart"] { height: 300px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -110,24 +109,22 @@ for i in range(3):
 
 st.write("---")
 
-# --- 4. GRAFICO UNIFICATO (PRECIPITAZIONI, IRRAGGIAMENTO, VENTO) ---
-st.subheader("📊 Analisi Combinata (Prossime 72h)")
-st.markdown("<small>🟨 Irraggiamento (W) | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
+# --- 4. GRAFICO UNIFICATO OTTIMIZZATO ---
+st.subheader("📊 Analisi Combinata (72h)")
+st.markdown("<small>🟨 kW/m² | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
 
-# Creazione DataFrame per il grafico
 df_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
-    'Irraggiamento': data_fc['hourly']['shortwave_radiation'][:72],
-    'Pioggia': data_fc['hourly']['precipitation'][:72],
-    'Vento': data_fc['hourly']['windspeed_10m'][:72]
+    'Irraggiamento (kW/m²)': [x / 1000 for x in data_fc['hourly']['shortwave_radiation'][:72]],
+    'Pioggia (mm)': data_fc['hourly']['precipitation'][:72],
+    'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
 
-# Grafico a linee/aree combinato
 st.line_chart(df_chart, color=["#FFCC00", "#00CCFF", "#00FF00"])
 
 st.write("---")
 
-# --- 5. MOSTR0 BOVINO INDEX ---
+# --- 5. MOSTRO BOVINO INDEX ---
 st.header("🐂 MOSTRO BOVINO INDEX")
 def get_bovino_score(day_offset, boost):
     h_rain = sum(data_hist['daily']['precipitation_sum'])
