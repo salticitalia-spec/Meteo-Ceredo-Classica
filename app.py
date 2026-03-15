@@ -7,53 +7,51 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- STILE CSS ---
+# --- STILE CSS HIGH-CONTRAST ---
 st.markdown("""
     <style>
     .stApp { background-color: #000000 !important; }
     h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Helvetica', sans-serif; }
     
     .current-meteo {
-        background-color: #111; border: 2px solid #FFFFFF; padding: 15px;
-        border-radius: 12px; text-align: center; margin-bottom: 15px;
+        background-color: #000000; border: 3px solid #FFFFFF; padding: 20px;
+        border-radius: 15px; text-align: center; margin-bottom: 20px;
     }
     
     .hourly-card {
-        background-color: #080808; border-left: 2px solid #333; padding: 2px 10px;
-        margin-bottom: 2px; display: flex; 
+        background-color: #111; border-left: 3px solid #444; padding: 5px 12px;
+        margin-bottom: 3px; display: flex; 
         justify-content: space-between; align-items: center;
-        height: 28px; font-size: 11px;
+        height: 32px; font-size: 13px; font-weight: bold;
     }
     
     .daily-card {
-        background-color: #111; border: 1px solid #444; padding: 15px;
-        border-radius: 12px; margin-bottom: 5px;
+        background-color: #0a0a0a; border: 1px solid #333; padding: 15px;
+        border-radius: 12px; margin-bottom: 8px;
     }
-    .daily-title { font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px; display: block; }
+    .daily-title { font-size: 20px; font-weight: 900; color: #FFFFFF !important; border-bottom: 2px solid #222; padding-bottom: 5px; margin-bottom: 12px; display: block; }
     .daily-stats { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-    .stat-item { text-align: center; min-width: 60px; margin-bottom: 5px; }
-    .stat-val { font-size: 18px; font-weight: 900; display: block; }
-    .stat-lab { font-size: 9px; color: #888; text-transform: uppercase; }
+    .stat-item { text-align: center; min-width: 65px; }
+    .stat-val { font-size: 20px; font-weight: 900; display: block; }
+    .stat-lab { font-size: 10px; color: #AAA; text-transform: uppercase; font-weight: bold; }
 
     .bovino-row {
         display: flex; justify-content: space-between; align-items: center;
-        padding: 10px 5px; border-bottom: 1px solid #222;
+        padding: 12px 8px; border-bottom: 1px solid #222;
     }
-    .sector-name { font-size: 16px; font-weight: bold; }
-    .sector-perc { font-size: 22px; font-weight: 900; }
-    .sun-info { font-size: 10px; color: #FFCC00 !important; display: block; }
+    .sector-name { font-size: 17px; font-weight: 900; }
+    .sector-perc { font-size: 24px; font-weight: 900; }
+    .sun-info { font-size: 11px; color: #FFFF00 !important; display: block; font-weight: bold; }
     
-    [data-testid="stChart"] { height: 320px !important; }
+    [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color: #050505; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- RECUPERO DATI API ---
 def get_all_data():
     lat, lon = 45.6117, 10.9710
-    # Previsioni
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunshine_duration,shortwave_radiation_sum&timezone=Europe%2FRome"
     
-    # Storico 10gg
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&daily=precipitation_sum,sunshine_duration&timezone=Europe%2FRome"
@@ -64,20 +62,20 @@ try:
     data_fc, data_hist = get_all_data()
     curr = data_fc['current_weather']
 except:
-    st.error("Errore API. Riprova più tardi.")
+    st.error("Errore API. Verifica la connessione.")
     st.stop()
 
 st.title("🧗 METEO CEREDOLESO")
 
-# --- 1. SITUAZIONE ATTUALE ---
+# --- 1. ORA ---
 st.markdown(f"""
     <div class="current-meteo">
-        <div style="font-size: 42px; font-weight: 900; line-height:1;">{curr['temperature']}°</div>
-        <div style="font-size: 16px; color: #00FF00 !important; font-weight: bold; margin-top:5px;">💨 {curr['windspeed']} km/h</div>
+        <div style="font-size: 50px; font-weight: 900; line-height:1; color: #FFFFFF !important;">{curr['temperature']}°</div>
+        <div style="font-size: 20px; color: #00FF00 !important; font-weight: 900; margin-top:8px;">💨 {curr['windspeed']} km/h</div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- 2. TRIORARIE (COMPATTE) ---
+# --- 2. TRIORARIE ---
 with st.expander("🕒 DETTAGLIO ORE (3h)", expanded=False):
     for i in range(0, 24, 3):
         t = data_fc['hourly']['time'][i].split("T")[1]
@@ -86,11 +84,11 @@ with st.expander("🕒 DETTAGLIO ORE (3h)", expanded=False):
         wind = data_fc['hourly']['windspeed_10m'][i]
         st.markdown(f"""
             <div class="hourly-card">
-                <b>{t}</b> <span>{temp}°</span> <span style="color:#00CCFF;">💧{rain}mm</span> <span style="color:#00FF00;">💨{wind}k/h</span>
+                <b>{t}</b> <span>{temp}°</span> <span style="color:#00FFFF;">💧{rain}mm</span> <span style="color:#00FF00;">💨{wind}k/h</span>
             </div>
         """, unsafe_allow_html=True)
 
-# --- 3. PREVISIONI 3 GIORNI (GRANDI) ---
+# --- 3. 3 GIORNI ---
 st.subheader("📅 Previsioni 3 Giorni")
 for i in range(3):
     giorno = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d').strftime('%A %d %B').upper()
@@ -103,41 +101,38 @@ for i in range(3):
         <div class="daily-card">
             <span class="daily-title">{giorno}</span>
             <div class="daily-stats">
-                <div class="stat-item"><span class="stat-lab">Max</span><span class="stat-val" style="color:#FF4B4B;">{t_max}°</span></div>
-                <div class="stat-item"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00CCFF;">{rain}<small>mm</small></span></div>
+                <div class="stat-item"><span class="stat-lab">Max</span><span class="stat-val" style="color:#FF3131;">{t_max}°</span></div>
+                <div class="stat-item"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{rain}<small>mm</small></span></div>
                 <div class="stat-item"><span class="stat-lab">Vento</span><span class="stat-val" style="color:#00FF00;">{wind}<small>k/h</small></span></div>
-                <div class="stat-item"><span class="stat-lab">Irragg.</span><span class="stat-val" style="color:#FFCC00;">{irr_sum}<small>MJ</small></span></div>
+                <div class="stat-item"><span class="stat-lab">Irragg.</span><span class="stat-val" style="color:#FFFF00;">{irr_sum}<small>MJ</small></span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- 4. GRAFICO PREVISIONI (72h) ---
-st.subheader("📊 Analisi Previsionale")
-st.markdown("<small>🟦 Pioggia (mm) | 🟨 Irraggiamento (W/10) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
+# --- 4. GRAFICO PREVISIONI (COLORI NEON) ---
+st.subheader("📊 Analisi Combinata (72h)")
+st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/25)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
 df_fc_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
-    'Pioggia (mm)': data_fc['hourly']['precipitation'][:72],
-    'Irragg. (W/10)': [x / 10 for x in data_fc['hourly']['shortwave_radiation'][:72]],
-    'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72]
+    'Pioggia': data_fc['hourly']['precipitation'][:72],
+    'Irraggiamento': [x / 25 for x in data_fc['hourly']['shortwave_radiation'][:72]],
+    'Vento': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
 
-st.line_chart(df_fc_chart, color=["#00CCFF", "#FFCC00", "#00FF00"])
+st.line_chart(df_fc_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
 
 st.write("---")
 
 # --- 5. MOSTRO BOVINO INDEX ---
 st.header("🐂 MOSTRO BOVINO INDEX")
-st.markdown("<h4 style='color: #888 !important; margin-top: -25px; font-weight: 400;'>(indice di asciugatura)</h4>", unsafe_allow_html=True)
-
 def get_bovino_score(day_offset, boost):
     h_rain = sum(data_hist['daily']['precipitation_sum'])
     h_sun = sum(data_hist['daily']['sunshine_duration']) / 3600
     f_rain = sum(data_fc['daily']['precipitation_sum'][:day_offset+1])
     f_sun = sum(data_fc['daily']['sunshine_duration'][:day_offset+1]) / 3600
-    # Formula bilanciata su irraggiamento e pioggia
     bias = ((h_sun + f_sun) * 0.005 * boost) - ((h_rain + f_rain) * 0.14)
     return np.clip(bias, -0.30, 0.15)
 
@@ -155,7 +150,7 @@ for day in range(3):
             bias = get_bovino_score(day, boost)
             prob = int(base + (bias * 100))
             min_p, max_p = np.clip([prob-toll, prob+toll], 0, 100)
-            color = "#00FF00" if min_p > 70 else "#FFFF00" if min_p > 50 else "#FF0000"
+            color = "#00FF00" if min_p > 70 else "#FFFF00" if min_p > 50 else "#FF3131"
             st.markdown(f"""
                 <div class="bovino-row">
                     <div><span class="sector-name">{nome}</span><span class="sun-info">{sun_time}</span></div>
@@ -165,18 +160,18 @@ for day in range(3):
 
 st.write("---")
 
-# --- 6. STORICO 10 GIORNI (COERENTE) ---
+# --- 6. STORICO 10 GIORNI (HIGH-CONTRAST) ---
 st.subheader("📊 Storico 10 Giorni")
-st.markdown("<small>🟦 Pioggia (mm) | 🟨 Irraggiamento (W/10) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
+st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/25)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
 df_hist_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_hist['hourly']['time']),
-    'Pioggia (mm)': data_hist['hourly']['precipitation'],
-    'Irragg. (W/10)': [x / 10 for x in data_hist['hourly']['shortwave_radiation']],
-    'Vento (km/h)': data_hist['hourly']['windspeed_10m']
+    'Pioggia': data_hist['hourly']['precipitation'],
+    'Irraggiamento': [x / 25 for x in data_hist['hourly']['shortwave_radiation']],
+    'Vento': data_hist['hourly']['windspeed_10m']
 }).set_index('Data')
 
-st.line_chart(df_hist_chart, color=["#00CCFF", "#FFCC00", "#00FF00"])
+st.line_chart(df_hist_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
 
-if st.button("🔄 AGGIORNA DATI"):
+if st.button("🔄 AGGIORNA"):
     st.rerun()
