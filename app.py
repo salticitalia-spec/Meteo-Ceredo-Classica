@@ -13,78 +13,119 @@ if os.path.exists("icona.png"):
 else:
     st.set_page_config(page_title="Meteo Ceredo Pro", page_icon="🧗")
 
+# CSS Avanzato per il "Mostro Bovino Fill"
+st.markdown("""
+    <style>
+    .meteo-card {
+        background-color: #1E1E1E;
+        border: 2px solid #444;
+        border-radius: 15px;
+        padding: 10px;
+        text-align: center;
+        color: white !important;
+    }
+    .bovino-container {
+        background-color: #262730;
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #444;
+    }
+    .bovino-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .bovino-name { font-size: 20px; font-weight: bold; color: white; }
+    .bovino-perc { font-size: 22px; font-weight: bold; }
+    
+    /* Barra di riempimento stile Mostro */
+    .progress-bg {
+        background-color: #444;
+        border-radius: 20px;
+        width: 100%;
+        height: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 20px;
+        transition: width 0.5s ease-in-out;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.title("🧗 Meteo Ceredo - Mostro Bovino")
 
-lat, lon = 45.6117, 10.9710
+# --- FUNZIONI DATI ---
+def get_weather_info(code):
+    mapping = {0: ("☀️", "Sereno"), 1: ("🌤️", "Quasi Sereno"), 2: ("⛅", "Poco Nuvoloso"), 3: ("☁️", "Nuvoloso"), 61: ("🌧️", "Pioggia"), 95: ("⛈️", "Temporale")}
+    return mapping.get(code, ("☁️", "Nuvole"))
 
 def get_all_data():
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation_probability,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_sum,sunshine_duration,wind_speed_10m_max&timezone=Europe%2FRome"
+    lat, lon = 45.6117, 10.9710
+    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_sum,sunshine_duration&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
-    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum,sunshine_duration,wind_speed_10m_max&timezone=Europe%2FRome"
+    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum,sunshine_duration&timezone=Europe%2FRome"
     return requests.get(url_fc).json(), requests.get(url_hist).json()
 
 data_fc, data_hist = get_all_data()
 
-# --- ALGORITMO MOSTRÒ BOVINO AVANZATO ---
-def get_bovino_for_day(day_offset, h_data, f_data, expo_boost):
-    # expo_boost simula il vantaggio del sole mattutino rispetto a quello pomeridiano
-    rain = sum(h_data['daily']['precipitation_sum']) + sum(f_data['daily']['precipitation_sum'][:day_offset+1])
-    sun = (sum(h_data['daily']['sunshine_duration']) + sum(f_data['daily']['sunshine_duration'][:day_offset+1])) / 3600
-    
-    # Parametro dinamico: il sole mattutino (Mangiafuoco) asciuga prima la condensa
-    bias = (sun * 0.005 * expo_boost) - (rain * 0.14)
+def get_bovino_score(day_offset, boost):
+    rain = sum(data_hist['daily']['precipitation_sum']) + sum(data_fc['daily']['precipitation_sum'][:day_offset+1])
+    sun = (sum(data_hist['daily']['sunshine_duration']) + sum(data_fc['daily']['sunshine_duration'][:day_offset+1])) / 3600
+    bias = (sun * 0.005 * boost) - (rain * 0.14)
     return np.clip(bias, -0.30, 0.15)
 
-# --- DATABASE SETTORI CON CRONOLOGIA SOLE ---
-# Ordine cronologico di arrivo del sole (09:30 -> Pomeriggio tardi)
-settori_ordinati = [
-    ("🔥 MANGIAFUOCO", (75, 4, 1.25)), # Sole ore 09:30 - Top asciugatura
-    ("🎋 SUPERCANNA", (70, 5, 1.20)),  # Segue a ruota
-    ("🐕 MONDO CANO", (70, 5, 1.10)),  # Sole tarda mattinata
-    ("🧠 CEREDOLESO", (77, 3, 1.00)),  # Sole intorno a mezzogiorno
-    ("👴 DEL PECI", (67, 4, 0.85)),    # Sole primo pomeriggio
-    ("🏺 OSTRAMANDRA", (60, 6, 0.70))  # Sole tardi - Molto lenta
+# --- SETTORI ---
+settori = [
+    ("🔥 MANGIAFUOCO", 75, 4, 1.25),
+    ("🎋 SUPERCANNA", 70, 5, 1.20),
+    ("🐕 MONDO CANO", 70, 5, 1.10),
+    ("🧠 CEREDOLESO", 77, 3, 1.00),
+    ("👴 DEL PECI", 67, 4, 0.85),
+    ("🏺 OSTRAMANDRA", 60, 6, 0.70)
 ]
 
 # --- UI PREVISIONI ---
-st.subheader("📅 Previsioni Meteo")
 cols_m = st.columns(3)
 for i in range(3):
     giorno = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d').strftime('%a %d')
-    ico, txt = get_weather_info(data_fc['daily']['weathercode'][i]) if 'get_weather_info' in globals() else ("🌤️", "Variabile")
+    ico, txt = get_weather_info(data_fc['daily']['weathercode'][i])
     with cols_m[i]:
-        st.markdown(f"<div style='background:#1E1E1E;padding:8px;border-radius:10px;text-align:center;border:1px solid #444;'>"
-                    f"<b>{giorno}</b><br>{data_fc['daily']['temperature_2m_max'][i]}°C</div>", unsafe_allow_html=True)
+        st.markdown(f'<div class="meteo-card"><b>{giorno}</b><br><span style="font-size:30px">{ico}</span><br><small>{txt}</small></div>', unsafe_allow_html=True)
 
 st.write("---")
-
-# --- UI INDEX ---
-st.header("🐂 MOSTRO BOVINO INDEX")
-st.caption("Stima in base a: pioggia 10gg + vento + cronologia sole")
+st.header("🐂 ANALISI ASCIUGATURA")
 
 tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
 
 for day in range(3):
     with tabs[day]:
-        for nome, (base, toll, boost) in settori_ordinati:
-            bias = get_bovino_for_day(day, data_hist, data_fc, boost)
-            prob_base = base + (bias * 100)
-            min_p, max_p = int(prob_base - toll), int(prob_base + toll)
-            min_p, max_p = np.clip([min_p, max_p], 0, 100)
+        for nome, base, toll, boost in settori:
+            bias = get_bovino_score(day, boost)
+            prob = int(base + (bias * 100))
+            min_p, max_p = np.clip([prob-toll, prob+toll], 0, 100)
             
+            # Colore dinamico
             color = "#28a745" if min_p > 70 else "#fd7e14" if min_p > 50 else "#dc3545"
+            
+            # HTML con icona toro e barra "Mostro"
             st.markdown(f"""
-            <div style='background:#262730; padding:12px; border-radius:10px; margin-bottom:10px; border-left: 10px solid {color}; display: flex; justify-content: space-between; align-items: center;'>
-                <div style='font-weight: bold; color: white; font-size: 16px;'>{nome}</div>
-                <div style='font-weight: bold; color: {color}; font-size: 20px;'>{min_p}-{max_p}%</div>
-            </div>
+                <div class="bovino-container">
+                    <div class="bovino-header">
+                        <div class="bovino-name">🐂 {nome}</div>
+                        <div class="bovino-perc" style="color:{color};">{min_p}-{max_p}%</div>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: {min_p}%; background-color: {color};"></div>
+                    </div>
+                </div>
             """, unsafe_allow_html=True)
-
-# Grafico veloce pioggia per conferma visiva
-with st.expander("📊 Verifica Pioggia ultimi 10gg"):
-    df_p = pd.DataFrame({'Giorno': [d[-5:] for d in data_hist['daily']['time']], 'mm': data_hist['daily']['precipitation_sum']})
-    st.bar_chart(df_p, x='Giorno', y='mm')
 
 if st.button("🔄 AGGIORNA"):
     st.rerun()
