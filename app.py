@@ -36,8 +36,6 @@ data_fc, data_hist = get_all_data()
 
 # --- FUNZIONE CALCOLO INDEX ---
 def get_bovino_for_day(day_offset, h_data, f_data):
-    # day_offset: 0=Oggi, 1=Domani, ecc.
-    # Sommiamo pioggia passata + previsione fino al giorno X
     rain_past = sum(h_data['daily']['precipitation_sum'])
     rain_future = sum(f_data['daily']['precipitation_sum'][:day_offset+1])
     sun_past = sum(h_data['daily']['sunshine_duration']) / 3600
@@ -46,13 +44,17 @@ def get_bovino_for_day(day_offset, h_data, f_data):
     total_rain = rain_past + rain_future
     total_sun = sun_past + sun_future
     
-    bias = (total_sun * 0.005) - (total_rain * 0.12)
+    bias = (total_sun * 0.006) - (total_rain * 0.13)
     return np.clip(bias, -0.25, 0.15)
 
-# --- SETTORI ---
+# --- DATABASE SETTORI CON ICONE ---
 settori_base = {
-    "Mangiafuoco": (75, 5), "Ceredoleso": (77, 3), "Supercanna": (70, 5),
-    "Mondo Cano": (70, 5), "Del Peci": (67, 4), "Ostramandra": (60, 6)
+    "🔥 MANGIAFUOCO": (75, 5), 
+    "🧠 CEREDOLESO": (77, 3), 
+    "🎋 SUPERCANNA": (70, 5),
+    "🐕 MONDO CANO": (70, 5), 
+    "👴 DEL PECI": (67, 4), 
+    "🏺 OSTRAMANDRA": (60, 6)
 }
 
 # --- UI: PREVISIONI METEO 3 GIORNI ---
@@ -64,33 +66,38 @@ for i in range(3):
     t_max = data_fc['daily']['temperature_2m_max'][i]
     t_min = data_fc['daily']['temperature_2m_min'][i]
     with cols_m[i]:
-        st.markdown(f"""<div style='background:#1E1E1E;padding:10px;border-radius:10px;text-align:center;'>
-        <b>{giorno}</b><br><span style='font-size:25px;'>{ico}</span><br><small>{txt}</small><br>
-        <span style='color:#FF4B4B;'>{t_max}°</span> <span style='color:#00ACF2;'>{t_min}°</span></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style='background:#1E1E1E;padding:10px;border-radius:10px;text-align:center;border:1px solid #333;'>
+        <b style='color:#DDD;'>{giorno}</b><br><span style='font-size:25px;'>{ico}</span><br><small>{txt}</small><br>
+        <span style='color:#FF4B4B;'>{t_max}°</span> | <span style='color:#00ACF2;'>{t_min}°</span></div>""", unsafe_allow_html=True)
 
 st.write("---")
 
-# --- UI: MOSTRO BOVINO INDEX (OGGI, DOMANI, DOPODOMANI) ---
-st.header("🐂 Mostro Bovino Index")
-tabs = st.tabs(["Oggi", "Domani", "Dopodomani"])
+# --- UI: MOSTRO BOVINO INDEX ---
+st.header("🐂 MOSTRO BOVINO INDEX")
+st.info("Percentuale di roccia ASCIUTTA stimata")
+
+tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
 
 for day in range(3):
     with tabs[day]:
         bias = get_bovino_for_day(day, data_hist, data_fc)
-        cols = st.columns(2)
-        for i, (nome, params) in enumerate(settori_base.items()):
+        # Usiamo un layout a lista singola per massima leggibilità del nome
+        for nome, params in settori_base.items():
             prob_base = params[0] + (bias * 100)
             min_p, max_p = int(prob_base - params[1]), int(prob_base + params[1])
             min_p, max_p = np.clip([min_p, max_p], 0, 100)
+            
             color = "#28a745" if min_p > 70 else "#fd7e14" if min_p > 50 else "#dc3545"
-            with cols[i % 2]:
-                st.markdown(f"""<div style='background:#262730;padding:12px;border-radius:10px;margin-bottom:10px;border-left:5px solid {color};'>
-                <h4 style='margin:0;font-size:16px;'>{nome}</h4>
-                <p style='font-size:20px;margin:0;color:{color};font-weight:bold;'>{min_p}-{max_p}%</p>
-                </div>""", unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div style='background:#262730; padding:15px; border-radius:12px; margin-bottom:12px; border-left: 8px solid {color}; display: flex; justify-content: space-between; align-items: center;'>
+                <div style='font-size: 20px; font-weight: bold; color: white;'>{nome}</div>
+                <div style='font-size: 24px; font-weight: bold; color: {color};'>{min_p}-{max_p}%</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # --- STORICO ---
-with st.expander("📊 Storico 10gg (Pioggia, Sole, Vento)"):
+with st.expander("📊 Vedi Dati Storici (Pioggia e Sole)"):
     df = pd.DataFrame({
         'Giorno': [d[-5:] for d in data_hist['daily']['time']],
         'Pioggia (mm)': data_hist['daily']['precipitation_sum'],
@@ -99,5 +106,5 @@ with st.expander("📊 Storico 10gg (Pioggia, Sole, Vento)"):
     st.bar_chart(df, x='Giorno', y='Pioggia (mm)')
     st.area_chart(df, x='Giorno', y='Sole (ore)')
 
-if st.button("🔄 AGGIORNA"):
+if st.button("🔄 AGGIORNA DATI"):
     st.rerun()
