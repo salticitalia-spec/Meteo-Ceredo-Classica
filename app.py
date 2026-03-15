@@ -17,14 +17,6 @@ st.title("🧗 Meteo Ceredo - Mostro Bovino")
 
 lat, lon = 45.6117, 10.9710
 
-def get_weather_info(code):
-    mapping = {
-        0: ("☀️", "Sereno"), 1: ("🌤️", "Quasi Sereno"), 2: ("⛅", "Poco Nuvoloso"),
-        3: ("☁️", "Nuvoloso"), 45: ("🌫️", "Nebbia"), 51: ("🌦️", "Pioviggine"),
-        61: ("🌧️", "Pioggia"), 63: ("🌧️", "Pioggia Forte"), 95: ("⛈️", "Temporale")
-    }
-    return mapping.get(code, ("☁️", "Nuvole"))
-
 def get_all_data():
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation_probability,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_sum,sunshine_duration,wind_speed_10m_max&timezone=Europe%2FRome"
     end_date = datetime.now().date()
@@ -34,77 +26,65 @@ def get_all_data():
 
 data_fc, data_hist = get_all_data()
 
-# --- FUNZIONE CALCOLO INDEX ---
-def get_bovino_for_day(day_offset, h_data, f_data):
-    rain_past = sum(h_data['daily']['precipitation_sum'])
-    rain_future = sum(f_data['daily']['precipitation_sum'][:day_offset+1])
-    sun_past = sum(h_data['daily']['sunshine_duration']) / 3600
-    sun_future = sum(f_data['daily']['sunshine_duration'][:day_offset+1]) / 3600
+# --- ALGORITMO MOSTRÒ BOVINO AVANZATO ---
+def get_bovino_for_day(day_offset, h_data, f_data, expo_boost):
+    # expo_boost simula il vantaggio del sole mattutino rispetto a quello pomeridiano
+    rain = sum(h_data['daily']['precipitation_sum']) + sum(f_data['daily']['precipitation_sum'][:day_offset+1])
+    sun = (sum(h_data['daily']['sunshine_duration']) + sum(f_data['daily']['sunshine_duration'][:day_offset+1])) / 3600
     
-    total_rain = rain_past + rain_future
-    total_sun = sun_past + sun_future
-    
-    bias = (total_sun * 0.006) - (total_rain * 0.13)
-    return np.clip(bias, -0.25, 0.15)
+    # Parametro dinamico: il sole mattutino (Mangiafuoco) asciuga prima la condensa
+    bias = (sun * 0.005 * expo_boost) - (rain * 0.14)
+    return np.clip(bias, -0.30, 0.15)
 
-# --- DATABASE SETTORI CON ICONE ---
-settori_base = {
-    "🔥 MANGIAFUOCO": (75, 5), 
-    "🧠 CEREDOLESO": (77, 3), 
-    "🎋 SUPERCANNA": (70, 5),
-    "🐕 MONDO CANO": (70, 5), 
-    "👴 DEL PECI": (67, 4), 
-    "🏺 OSTRAMANDRA": (60, 6)
-}
+# --- DATABASE SETTORI CON CRONOLOGIA SOLE ---
+# Ordine cronologico di arrivo del sole (09:30 -> Pomeriggio tardi)
+settori_ordinati = [
+    ("🔥 MANGIAFUOCO", (75, 4, 1.25)), # Sole ore 09:30 - Top asciugatura
+    ("🎋 SUPERCANNA", (70, 5, 1.20)),  # Segue a ruota
+    ("🐕 MONDO CANO", (70, 5, 1.10)),  # Sole tarda mattinata
+    ("🧠 CEREDOLESO", (77, 3, 1.00)),  # Sole intorno a mezzogiorno
+    ("👴 DEL PECI", (67, 4, 0.85)),    # Sole primo pomeriggio
+    ("🏺 OSTRAMANDRA", (60, 6, 0.70))  # Sole tardi - Molto lenta
+]
 
-# --- UI: PREVISIONI METEO 3 GIORNI ---
+# --- UI PREVISIONI ---
 st.subheader("📅 Previsioni Meteo")
 cols_m = st.columns(3)
 for i in range(3):
     giorno = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d').strftime('%a %d')
-    ico, txt = get_weather_info(data_fc['daily']['weathercode'][i])
-    t_max = data_fc['daily']['temperature_2m_max'][i]
-    t_min = data_fc['daily']['temperature_2m_min'][i]
+    ico, txt = get_weather_info(data_fc['daily']['weathercode'][i]) if 'get_weather_info' in globals() else ("🌤️", "Variabile")
     with cols_m[i]:
-        st.markdown(f"""<div style='background:#1E1E1E;padding:10px;border-radius:10px;text-align:center;border:1px solid #333;'>
-        <b style='color:#DDD;'>{giorno}</b><br><span style='font-size:25px;'>{ico}</span><br><small>{txt}</small><br>
-        <span style='color:#FF4B4B;'>{t_max}°</span> | <span style='color:#00ACF2;'>{t_min}°</span></div>""", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:#1E1E1E;padding:8px;border-radius:10px;text-align:center;border:1px solid #444;'>"
+                    f"<b>{giorno}</b><br>{data_fc['daily']['temperature_2m_max'][i]}°C</div>", unsafe_allow_html=True)
 
 st.write("---")
 
-# --- UI: MOSTRO BOVINO INDEX ---
+# --- UI INDEX ---
 st.header("🐂 MOSTRO BOVINO INDEX")
-st.info("Percentuale di roccia ASCIUTTA stimata")
+st.caption("Stima in base a: pioggia 10gg + vento + cronologia sole")
 
 tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
 
 for day in range(3):
     with tabs[day]:
-        bias = get_bovino_for_day(day, data_hist, data_fc)
-        # Usiamo un layout a lista singola per massima leggibilità del nome
-        for nome, params in settori_base.items():
-            prob_base = params[0] + (bias * 100)
-            min_p, max_p = int(prob_base - params[1]), int(prob_base + params[1])
+        for nome, (base, toll, boost) in settori_ordinati:
+            bias = get_bovino_for_day(day, data_hist, data_fc, boost)
+            prob_base = base + (bias * 100)
+            min_p, max_p = int(prob_base - toll), int(prob_base + toll)
             min_p, max_p = np.clip([min_p, max_p], 0, 100)
             
             color = "#28a745" if min_p > 70 else "#fd7e14" if min_p > 50 else "#dc3545"
-            
             st.markdown(f"""
-            <div style='background:#262730; padding:15px; border-radius:12px; margin-bottom:12px; border-left: 8px solid {color}; display: flex; justify-content: space-between; align-items: center;'>
-                <div style='font-size: 20px; font-weight: bold; color: white;'>{nome}</div>
-                <div style='font-size: 24px; font-weight: bold; color: {color};'>{min_p}-{max_p}%</div>
+            <div style='background:#262730; padding:12px; border-radius:10px; margin-bottom:10px; border-left: 10px solid {color}; display: flex; justify-content: space-between; align-items: center;'>
+                <div style='font-weight: bold; color: white; font-size: 16px;'>{nome}</div>
+                <div style='font-weight: bold; color: {color}; font-size: 20px;'>{min_p}-{max_p}%</div>
             </div>
             """, unsafe_allow_html=True)
 
-# --- STORICO ---
-with st.expander("📊 Vedi Dati Storici (Pioggia e Sole)"):
-    df = pd.DataFrame({
-        'Giorno': [d[-5:] for d in data_hist['daily']['time']],
-        'Pioggia (mm)': data_hist['daily']['precipitation_sum'],
-        'Sole (ore)': [round(s/3600,1) for s in data_hist['daily']['sunshine_duration']]
-    })
-    st.bar_chart(df, x='Giorno', y='Pioggia (mm)')
-    st.area_chart(df, x='Giorno', y='Sole (ore)')
+# Grafico veloce pioggia per conferma visiva
+with st.expander("📊 Verifica Pioggia ultimi 10gg"):
+    df_p = pd.DataFrame({'Giorno': [d[-5:] for d in data_hist['daily']['time']], 'mm': data_hist['daily']['precipitation_sum']})
+    st.bar_chart(df_p, x='Giorno', y='mm')
 
-if st.button("🔄 AGGIORNA DATI"):
+if st.button("🔄 AGGIORNA"):
     st.rerun()
