@@ -44,23 +44,21 @@ st.markdown("""
     .sector-perc { font-size: 22px; font-weight: 900; }
     .sun-info { font-size: 10px; color: #FFCC00 !important; display: block; }
     
-    [data-testid="stChart"] { height: 130px !important; }
+    [data-testid="stChart"] { height: 250px !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- RECUPERO DATI API ---
 def get_all_data():
     lat, lon = 45.6117, 10.9710
-    # Aggiunto shortwave_radiation_max e direct_radiation_sum
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunshine_duration,shortwave_radiation_sum&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum,wind_speed_10m_max,sunshine_duration&timezone=Europe%2FRome"
-    url_hist_hourly = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=shortwave_radiation&timezone=Europe%2FRome"
-    return requests.get(url_fc).json(), requests.get(url_hist).json(), requests.get(url_hist_hourly).json()
+    return requests.get(url_fc).json(), requests.get(url_hist).json()
 
 try:
-    data_fc, data_hist, data_hourly_hist = get_all_data()
+    data_fc, data_hist = get_all_data()
     curr = data_fc['current_weather']
 except:
     st.error("Errore API")
@@ -71,35 +69,32 @@ st.title("🧗 METEO CEREDOLESO")
 # --- 1. ORA ---
 st.markdown(f"""
     <div class="current-meteo">
-        <div style="font-size: 38px; font-weight: 900; line-height:1;">{curr['temperature']}°</div>
+        <div style="font-size: 42px; font-weight: 900; line-height:1;">{curr['temperature']}°</div>
         <div style="font-size: 16px; color: #00FF00 !important; font-weight: bold; margin-top:5px;">💨 {curr['windspeed']} km/h</div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- 2. TRIORARIE (COMPATTE) ---
-with st.expander("🕒 DETTAGLIO OGNI 3 ORE", expanded=False):
+# --- 2. TRIORARIE ---
+with st.expander("🕒 DETTAGLIO ORE (3h)", expanded=False):
     for i in range(0, 24, 3):
         t = data_fc['hourly']['time'][i].split("T")[1]
         temp = data_fc['hourly']['temperature_2m'][i]
         rain = data_fc['hourly']['precipitation'][i]
-        irr = data_fc['hourly']['shortwave_radiation'][i]
-        rain_class = "rain" if rain > 0 else ""
+        wind = data_fc['hourly']['windspeed_10m'][i]
         st.markdown(f"""
-            <div class="hourly-card {rain_class}">
-                <b>{t}</b> <span>{temp}°</span> <span style="color:#00CCFF;">💧{rain}mm</span> <span style="color:#FFCC00;">☀️{irr}W</span>
+            <div class="hourly-card">
+                <b>{t}</b> <span>{temp}°</span> <span style="color:#00CCFF;">💧{rain}mm</span> <span style="color:#00FF00;">💨{wind}k/h</span>
             </div>
         """, unsafe_allow_html=True)
 
-# --- 3. 3 GIORNI (GRANDI CON IRRAGGIAMENTO) ---
+# --- 3. 3 GIORNI ---
 st.subheader("📅 Previsioni 3 Giorni")
 for i in range(3):
     giorno = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d').strftime('%A %d %B').upper()
     t_max = data_fc['daily']['temperature_2m_max'][i]
     rain = data_fc['daily']['precipitation_sum'][i]
     wind = data_fc['daily']['wind_speed_10m_max'][i]
-    # Irraggiamento totale giornaliero convertito in MJ/m² o mantenuto come somma
     irr_sum = round(data_fc['daily']['shortwave_radiation_sum'][i], 1)
-    sun = round(data_fc['daily']['sunshine_duration'][i] / 3600, 1)
     
     st.markdown(f"""
         <div class="daily-card">
@@ -107,19 +102,33 @@ for i in range(3):
             <div class="daily-stats">
                 <div class="stat-item"><span class="stat-lab">Max</span><span class="stat-val" style="color:#FF4B4B;">{t_max}°</span></div>
                 <div class="stat-item"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00CCFF;">{rain}<small>mm</small></span></div>
-                <div class="stat-item"><span class="stat-lab">Vento</span><span class="stat-val">{wind}<small>k/h</small></span></div>
+                <div class="stat-item"><span class="stat-lab">Vento</span><span class="stat-val" style="color:#00FF00;">{wind}<small>k/h</small></span></div>
                 <div class="stat-item"><span class="stat-lab">Irragg.</span><span class="stat-val" style="color:#FFCC00;">{irr_sum}<small>MJ</small></span></div>
-                <div class="stat-item"><span class="stat-lab">Sole</span><span class="stat-val" style="color:#FFA500;">{sun}<small>h</small></span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- 4. MOSTR0 BOVINO INDEX ---
-st.header("🐂 MOSTRO BOVINO INDEX")
-st.markdown("<h4 style='color: #888 !important; margin-top: -25px; font-weight: 400;'>(indice di asciugatura)</h4>", unsafe_allow_html=True)
+# --- 4. GRAFICO UNIFICATO (PRECIPITAZIONI, IRRAGGIAMENTO, VENTO) ---
+st.subheader("📊 Analisi Combinata (Prossime 72h)")
+st.markdown("<small>🟨 Irraggiamento (W) | 🟦 Pioggia (mm) | 🟩 Vento (km/h)</small>", unsafe_allow_html=True)
 
+# Creazione DataFrame per il grafico
+df_chart = pd.DataFrame({
+    'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
+    'Irraggiamento': data_fc['hourly']['shortwave_radiation'][:72],
+    'Pioggia': data_fc['hourly']['precipitation'][:72],
+    'Vento': data_fc['hourly']['windspeed_10m'][:72]
+}).set_index('Data')
+
+# Grafico a linee/aree combinato
+st.line_chart(df_chart, color=["#FFCC00", "#00CCFF", "#00FF00"])
+
+st.write("---")
+
+# --- 5. MOSTR0 BOVINO INDEX ---
+st.header("🐂 MOSTRO BOVINO INDEX")
 def get_bovino_score(day_offset, boost):
     h_rain = sum(data_hist['daily']['precipitation_sum'])
     h_sun = sum(data_hist['daily']['sunshine_duration']) / 3600
@@ -145,28 +154,10 @@ for day in range(3):
             color = "#00FF00" if min_p > 70 else "#FFFF00" if min_p > 50 else "#FF0000"
             st.markdown(f"""
                 <div class="bovino-row">
-                    <div>
-                        <span class="sector-name">{nome}</span>
-                        <span class="sun-info">{sun_time}</span>
-                    </div>
+                    <div><span class="sector-name">{nome}</span><span class="sun-info">{sun_time}</span></div>
                     <span class="sector-perc" style="color:{color};">{min_p}-{max_p}%</span>
                 </div>
             """, unsafe_allow_html=True)
-
-st.write("---")
-
-# --- 5. STORICO ---
-st.subheader("📊 Analisi Irraggiamento e Pioggia")
-st.markdown("🔹 **Radiazione Solare Oraria (W/m²)** - *Indica la potenza del sole*")
-irr_data = pd.DataFrame({
-    'Time': data_fc['hourly']['time'][:72], 
-    'Irraggiamento': data_fc['hourly']['shortwave_radiation'][:72]
-}).set_index('Time')
-st.area_chart(irr_data, color="#FFCC00")
-
-st.markdown("🔹 **Piovosità 10gg (mm)**")
-dates_h = [d[-5:] for d in data_hist['daily']['time']]
-st.bar_chart(pd.DataFrame({'D': dates_h, 'mm': data_hist['daily']['precipitation_sum']}), x='D', y='mm', color="#00CCFF")
 
 if st.button("🔄 AGGIORNA"):
     st.rerun()
