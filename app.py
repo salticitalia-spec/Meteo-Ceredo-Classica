@@ -7,30 +7,29 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredo Pro", page_icon="🧗", layout="centered")
 
-# --- STILE CSS OTTIMIZZATO PER LEGGIBILITÀ ---
+# --- STILE CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #000000 !important; }
     h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Helvetica', sans-serif; }
     
-    /* Box Condizioni Attuali */
     .current-meteo {
         background-color: #111; border: 2px solid #FFFFFF; padding: 20px;
         border-radius: 15px; text-align: center; margin-bottom: 20px;
     }
     
-    /* Card Triorarie (Mobile Friendly) */
     .hourly-card {
         background-color: #111; border-left: 5px solid #444; padding: 12px;
         border-radius: 8px; margin-bottom: 8px; display: flex; 
         justify-content: space-between; align-items: center;
     }
     .hourly-card.rain { border-left: 5px solid #00CCFF; background-color: #001a33; }
-    .hour-text { font-size: 18px; font-weight: bold; width: 60px; }
-    .temp-text { font-size: 20px; font-weight: 900; color: #FF4B4B; width: 60px; }
-    .data-text { font-size: 14px; text-align: right; }
+    
+    .daily-box {
+        background-color: #111; border: 1px solid #333; padding: 10px;
+        border-radius: 10px; margin-bottom: 10px;
+    }
 
-    /* Box Mostro Bovino */
     .bovino-row {
         display: flex; justify-content: space-between; align-items: center;
         padding: 15px 5px; border-bottom: 1px solid #222;
@@ -38,13 +37,14 @@ st.markdown("""
     .sector-name { font-size: 18px; font-weight: bold; }
     .sector-perc { font-size: 24px; font-weight: 900; }
     .sun-info { font-size: 11px; color: #FFCC00 !important; display: block; font-weight: bold; }
+    [data-testid="stChart"] { height: 180px !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- RECUPERO DATI ---
 def get_all_data():
     lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,weathercode&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunshine_duration&timezone=Europe%2FRome"
+    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,weathercode,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunshine_duration&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum,wind_speed_10m_max,sunshine_duration&timezone=Europe%2FRome"
@@ -60,7 +60,7 @@ def get_weather_desc(code):
 
 st.title("🧗 METEO CEREDO")
 
-# --- 1. ATTUALE ---
+# --- 1. CONDIZIONI ORA ---
 st.subheader("📍 Ora")
 st.markdown(f"""
     <div class="current-meteo">
@@ -70,32 +70,51 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- 2. PREVISIONI TRIORARIE (CARD LEGGIBILI) ---
+# --- 2. PREVISIONI TRIORARIE ---
 st.subheader("🕒 Prossime 24 Ore (Ogni 3h)")
-h_times = data_fc['hourly']['time'][:24:3]
-h_temps = data_fc['hourly']['temperature_2m'][:24:3]
-h_rain = data_fc['hourly']['precipitation'][:24:3]
-h_wind = data_fc['hourly']['windspeed_10m'][:24:3]
-
-for t, temp, rain, wind in zip(h_times, h_temps, h_rain, h_wind):
-    ora = t.split("T")[1]
+for i in range(0, 24, 3):
+    t = data_fc['hourly']['time'][i].split("T")[1]
+    temp = data_fc['hourly']['temperature_2m'][i]
+    rain = data_fc['hourly']['precipitation'][i]
+    wind = data_fc['hourly']['windspeed_10m'][i]
     rain_class = "rain" if rain > 0 else ""
-    rain_text = f"<span style='color:#00CCFF;'>💧 {rain}mm</span>" if rain > 0 else "💧 0mm"
-    
     st.markdown(f"""
         <div class="hourly-card {rain_class}">
-            <div class="hour-text">{ora}</div>
-            <div class="temp-text">{temp}°</div>
-            <div class="data-text">
-                {rain_text}<br>
-                💨 {wind} <small>km/h</small>
+            <div style="font-size:18px; font-weight:bold; width:60px;">{t}</div>
+            <div style="font-size:20px; font-weight:900; color:#FF4B4B; width:60px;">{temp}°</div>
+            <div style="font-size:14px; text-align:right;">
+                <span style="color:#00CCFF;">💧 {rain}mm</span><br>💨 {wind} km/h
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- 3. MOSTR0 BOVINO INDEX ---
+# --- 3. PREVISIONI 3 GIORNI (DETTAGLIATE) ---
+st.subheader("📅 Previsioni Prossimi 3 Giorni")
+for i in range(3):
+    giorno = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d').strftime('%A %d %b').upper()
+    t_max = data_fc['daily']['temperature_2m_max'][i]
+    t_min = data_fc['daily']['temperature_2m_min'][i]
+    rain_sum = data_fc['daily']['precipitation_sum'][i]
+    wind_max = data_fc['daily']['wind_speed_10m_max'][i]
+    sun_hours = round(data_fc['daily']['sunshine_duration'][i] / 3600, 1)
+    
+    st.markdown(f"""
+        <div class="daily-box">
+            <b style="color:#FFF; font-size:16px;">{giorno}</b><br>
+            <div style="display:flex; justify-content:space-between; margin-top:8px;">
+                <span>🌡️ <b style="color:#FF4B4B;">{t_max}°</b> / <b style="color:#00CCFF;">{t_min}°</b></span>
+                <span>💧 <b>{rain_sum}mm</b></span>
+                <span>💨 <b>{wind_max}km/h</b></span>
+                <span style="color:#FFCC00;">☀️ <b>{sun_hours}h</b></span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.write("---")
+
+# --- 4. MOSTRO BOVINO INDEX (Indice di Asciugatura) ---
 st.header("🐂 MOSTRO BOVINO INDEX")
 st.markdown("<h4 style='color: #888 !important; margin-top: -25px; font-weight: 400;'>(indice di asciugatura)</h4>", unsafe_allow_html=True)
 
@@ -136,10 +155,14 @@ for day in range(3):
             """, unsafe_allow_html=True)
 
 st.write("---")
-# --- 4. STORICO (GRAFICI PICCOLI) ---
+
+# --- 5. STORICO (GRAFICI) ---
 st.subheader("📊 Storico 10gg")
 dates_h = [d[-5:] for d in data_hist['daily']['time']]
+st.markdown("🔹 **Piovosità (mm)**")
 st.bar_chart(pd.DataFrame({'D': dates_h, 'mm': data_hist['daily']['precipitation_sum']}), x='D', y='mm', color="#00CCFF")
+st.markdown("🔹 **Radiazione Solare (W/m²)**")
+st.area_chart(pd.DataFrame({'Time': data_hourly_hist['hourly']['time'], 'Radiazione': data_hourly_hist['hourly']['shortwave_radiation']}).set_index('Time'), color="#FFFF00")
 
 if st.button("🔄 AGGIORNA"):
     st.rerun()
