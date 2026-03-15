@@ -26,14 +26,14 @@ def get_weather_info(code):
 
 def get_all_data():
     # Previsioni
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation_probability,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Europe%2FRome"
+    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation_probability,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Europe%2FRome"
     
-    # Storico pioggia ultimi 10 giorni
+    # Storico 10 giorni: Pioggia, Ore di Sole, Vento Max
     end_date = datetime.now().date()
-    start_date = end_date - timedelta(days=10) # <--- Cambiato a 10
-    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum&timezone=Europe%2FRome"
+    start_date = end_date - timedelta(days=10)
+    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&daily=precipitation_sum,sunshine_duration,wind_speed_10m_max&timezone=Europe%2FRome"
     
-    return requests.get(url).json(), requests.get(url_hist).json()
+    return requests.get(url_fc).json(), requests.get(url_hist).json()
 
 data, hist = get_all_data()
 
@@ -56,7 +56,7 @@ for i in range(5):
     f_idx = idx + (i + 1)
     cols_h[i].markdown(f"**{h_time[f_idx][-5:]}**\n\n{h_temp[f_idx]}°\n\n💧{h_prob[f_idx]}%")
 
-# --- 3 GIORNI ---
+# --- TENDENZA 3 GIORNI ---
 st.write("---")
 st.subheader("📅 Tendenza 3 Giorni")
 d_t, d_max, d_min, d_c = data['daily']['time'], data['daily']['temperature_2m_max'], data['daily']['temperature_2m_min'], data['daily']['weathercode']
@@ -66,17 +66,29 @@ for i in range(1, 4):
     ico, txt = get_weather_info(d_c[i])
     cols_d[i-1].markdown(f"<div style='background:#f0f2f6;padding:10px;border-radius:10px;text-align:center;color:black;'><b>{giorno}</b><br>{ico}<br>{txt}<br><span style='color:red;'>{d_max[i]}°</span> <span style='color:blue;'>{d_min[i]}°</span></div>", unsafe_allow_html=True)
 
-# --- NUOVO STORICO 10 GIORNI ---
+# --- ANALISI STORICA 10 GIORNI ---
 st.write("---")
-pioggia_totale = sum(hist['daily']['precipitation_sum'])
-st.subheader(f"💧 Piovosità ultimi 10 giorni")
-st.info(f"Accumulo totale: **{pioggia_totale:.1f} mm**")
+st.subheader("📊 Analisi ultimi 10 giorni")
 
-df_rain = pd.DataFrame({
-    'Giorno': [datetime.strptime(d, '%Y-%m-%d').strftime('%d/%m') for d in hist['daily']['time']], 
-    'mm': hist['daily']['precipitation_sum']
+# Preparazione dati storici
+df_hist = pd.DataFrame({
+    'Giorno': [datetime.strptime(d, '%Y-%m-%d').strftime('%d/%m') for d in hist['daily']['time']],
+    'Pioggia (mm)': hist['daily']['precipitation_sum'],
+    'Sole (ore)': [round(s / 3600, 1) for s in hist['daily']['sunshine_duration']], # Convertito da secondi a ore
+    'Vento Max (km/h)': hist['daily']['wind_speed_10m_max']
 })
-st.bar_chart(data=df_rain, x='Giorno', y='mm', color="#4682B4")
+
+# 1. Pioggia
+st.caption("💧 Piovosità (mm)")
+st.bar_chart(data=df_hist, x='Giorno', y='Pioggia (mm)', color="#4682B4")
+
+# 2. Sole
+st.caption("☀️ Ore di Sole (durata effettiva)")
+st.area_chart(data=df_hist, x='Giorno', y='Sole (ore)', color="#FFD700")
+
+# 3. Vento
+st.caption("🌬️ Vento Massimo (km/h)")
+st.line_chart(data=df_hist, x='Giorno', y='Vento Max (km/h)', color="#A9A9A9")
 
 if st.button("🔄 AGGIORNA"):
     st.rerun()
