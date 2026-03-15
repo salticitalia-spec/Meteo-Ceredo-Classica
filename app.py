@@ -111,7 +111,7 @@ for i in range(3):
 
 st.write("---")
 
-# --- 4. GRAFICO PREVISIONI (PIOGGIA X10, IRRAGG. W/50) ---
+# --- 4. GRAFICO PREVISIONI ---
 st.subheader("📊 Analisi Combinata (72h)")
 st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
@@ -136,12 +136,13 @@ def get_bovino_score(day_offset, boost):
     bias = ((h_sun + f_sun) * 0.005 * boost) - ((h_rain + f_rain) * 0.14)
     return np.clip(bias, -0.30, 0.15)
 
+# CORREZIONE QUI: Parentesi quadra chiusa correttamente alla fine della lista
 settori = [
     ("🔥 MANGIAFUOCO", 75, 4, 1.40, "Sole: 09:30 → 13:30"),
     ("🎋 SUPERCANNA", 70, 5, 1.28, "Sole: 10:30 → 15:00"),
     ("🧠 CEREDOLESO", 77, 3, 1.10, "Sole: 12:00 → 16:00"),
     ("🏺 OSTRAMANDRA", 60, 6, 0.80, "Sole: 13:30 → 16:30")
-)
+]
 
 tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
 for day in range(3):
@@ -160,7 +161,7 @@ for day in range(3):
 
 st.write("---")
 
-# --- 6. STORICO 10 GIORNI (PIOGGIA X10, IRRAGG. W/50) ---
+# --- 6. STORICO 10 GIORNI ---
 st.subheader("📊 Storico 10 Giorni")
 st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
