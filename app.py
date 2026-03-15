@@ -90,7 +90,7 @@ st.area_chart(df_sun.set_index('Time'), color="#FFFF00")
 
 st.write("---")
 
-# --- 4. MOSTRO BOVINO INDEX ---
+# --- 4. MOSTRO BOVINO INDEX (Indice di Asciugatura) ---
 st.header("🐂 MOSTRO BOVINO INDEX")
 st.markdown("<h4 style='color: #888 !important; margin-top: -25px; font-weight: 400;'>(indice di asciugatura)</h4>", unsafe_allow_html=True)
 
@@ -101,20 +101,17 @@ def get_bovino_score(day_offset, boost):
     fc_rain = sum(data_fc['daily']['precipitation_sum'][:day_offset+1])
     fc_sun = sum(data_fc['daily']['sunshine_duration'][:day_offset+1]) / 3600
     
-    # Calcolo bias con boost specifico per irraggiamento settoriale
     bias = ((hist_sun + fc_sun) * 0.005 * boost) + (hist_wind * 0.002) - ((hist_rain + fc_rain) * 0.14)
     return np.clip(bias, -0.30, 0.15)
 
-# SETTORI CON LOGICA IRRAGGIAMENTO CEREDO
-# Mangiafuoco (09.30) ha il boost più alto perché prende il sole migliore per l'asciugatura mattutina
-# Ostramandra (13.30) riceve il sole quando l'aria è già calda, ma per meno tempo (fino alle 16.30)
+# SETTORI CON AGGIORNAMENTO SUPERCANNA (SOLE FINO ORE 15:00)
 settori = [
-    ("🔥 MANGIAFUOCO", 75, 4, 1.40, "Sole: 09:30 → 13:30 (Max Asciugatura)"),
-    ("🎋 SUPERCANNA", 70, 5, 1.30, "Sole: 10:30 → 14:30"),
+    ("🔥 MANGIAFUOCO", 75, 4, 1.40, "Sole: 09:30 → 13:30"),
+    ("🎋 SUPERCANNA", 70, 5, 1.28, "Sole: 10:30 → 15:00"),
     ("🐕 MONDO CANO", 70, 5, 1.20, "Sole: 11:30 → 15:30"),
     ("🧠 CEREDOLESO", 77, 3, 1.10, "Sole: 12:00 → 16:00"),
     ("👴 DEL PECI", 67, 4, 0.95, "Sole: 13:00 → 16:30"),
-    ("🏺 OSTRAMANDRA", 60, 6, 0.80, "Sole: 13:30 → 16:30 (Finestra corta)")
+    ("🏺 OSTRAMANDRA", 60, 6, 0.80, "Sole: 13:30 → 16:30 (Ponte Veja)")
 ]
 
 tabs = st.tabs(["OGGI", "DOMANI", "DOPODOMANI"])
@@ -135,5 +132,5 @@ for day in range(3):
                 </div>
             """, unsafe_allow_html=True)
 
-if st.button("🔄 AGGIORNA DATI"):
+if st.button("🔄 AGGIORNA"):
     st.rerun()
