@@ -7,26 +7,28 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE ---
 st.set_page_config(page_title="Meteo Ceredo Pro", page_icon="🧗", layout="centered")
 
-# CSS AD ALTO CONTRASTO CON TITOLI CHIARI
+# CSS AD ALTO CONTRASTO
 st.markdown("""
     <style>
     .stApp { background-color: #000000 !important; }
-    h1, h2, h3 { color: #FFFFFF !important; font-weight: 900 !important; margin-bottom: 10px !important; }
+    h1, h2, h3 { color: #FFFFFF !important; font-weight: 900 !important; }
     p, span, div { color: #FFFFFF !important; }
     
-    /* Box Meteo Attuale */
     .current-meteo {
         background-color: #111; border: 2px solid #FFFFFF; padding: 15px;
         border-radius: 12px; text-align: center; margin-bottom: 25px;
     }
     
-    /* Box Previsioni 3gg */
     .fc-card {
         background-color: #000; border: 1px solid #444; padding: 8px;
         border-radius: 8px; text-align: center;
     }
 
-    /* Lista Mostro Bovino Light */
+    .historic-section {
+        background-color: #111; border: 1px solid #333; padding: 10px;
+        border-radius: 8px; margin-bottom: 15px;
+    }
+
     .bovino-row {
         display: flex; justify-content: space-between; align-items: center;
         padding: 12px 5px; border-bottom: 1px solid #222;
@@ -34,9 +36,6 @@ st.markdown("""
     .sector-name { font-size: 19px; font-weight: bold; }
     .sector-perc { font-size: 24px; font-weight: 900; }
     .sun-info { font-size: 11px; color: #888 !important; display: block; text-transform: uppercase; }
-    
-    /* Tabs stile alto contrasto */
-    .stTabs [data-baseweb="tab"] { color: white !important; font-size: 18px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -54,16 +53,16 @@ curr = data_fc['current_weather']
 
 st.title("🧗 METEO CEREDO")
 
-# --- 1. TITOLO E METEO ATTUALE ---
+# --- 1. CONDIZIONI ATTUALI ---
 st.subheader("📍 Condizioni Attuali")
 st.markdown(f"""
     <div class="current-meteo">
         <div style="font-size: 48px; font-weight: 900;">{curr['temperature']}°C</div>
-        <div style="font-size: 18px; color: #00FF00 !important; font-weight: bold;">💨 VENTO: {curr['windspeed']} km/h</div>
+        <div style="font-size: 18px; color: #00FF00 !important; font-weight: bold;">VENTO: {curr['windspeed']} km/h</div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- 2. TITOLO E PREVISIONE 3 GIORNI ---
+# --- 2. PREVISIONI 3 GIORNI ---
 st.subheader("📅 Previsioni 3 Giorni")
 cols = st.columns(3)
 for i in range(3):
@@ -72,26 +71,49 @@ for i in range(3):
     with cols[i]:
         st.markdown(f"""
             <div class="fc-card">
-                <b style="font-size:13px; color:#FFF;">{d}</b><br>
+                <b style="font-size:13px;">{d}</b><br>
                 <span style="color:#FF4B4B !important; font-weight:bold; font-size:18px;">{data_fc['daily']['temperature_2m_max'][i]}°</span><br>
-                <span style="font-size: 12px; color:#00CCFF !important; font-weight:bold;">💧 {rain}mm</span>
+                <span style="font-size: 12px; color:#00CCFF !important; font-weight:bold;">{rain}mm</span>
             </div>
         """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- 3. TITOLO E MOSTRO BOVINO INDEX ---
+# --- 3. STORICO 10 GIORNI ---
+st.subheader("📊 Riepilogo Storico (Ultimi 10gg)")
+
+# Calcolo totali e medie
+total_rain = sum(data_hist['daily']['precipitation_sum'])
+total_sun_hours = sum(data_hist['daily']['sunshine_duration']) / 3600
+avg_wind = np.mean(data_hist['daily']['wind_speed_10m_max'])
+
+st.markdown(f"""
+    <div class="historic-section">
+        <small>PIOVOSITÀ TOTALE</small>
+        <div style="font-size: 22px; font-weight: bold; color: #00CCFF;">{total_rain:.1f} mm</div>
+    </div>
+    <div class="historic-section">
+        <small>IRRAGGIAMENTO TOTALE</small>
+        <div style="font-size: 22px; font-weight: bold; color: #FFFF00;">{total_sun_hours:.1f} ore di sole</div>
+    </div>
+    <div class="historic-section">
+        <small>VENTO MEDIO MAX</small>
+        <div style="font-size: 22px; font-weight: bold; color: #00FF00;">{avg_wind:.1f} km/h</div>
+    </div>
+""", unsafe_allow_html=True)
+
+st.write("---")
+
+# --- 4. MOSTRO BOVINO INDEX ---
 st.header("🐂 MOSTRO BOVINO INDEX")
-st.markdown("<p style='color:#888 !important; font-size:14px; margin-top:-15px;'>Stima percentuale di asciutto in base a pioggia, vento e irraggiamento.</p>", unsafe_allow_html=True)
 
 def get_bovino_score(day_offset, boost):
-    total_rain = sum(data_hist['daily']['precipitation_sum']) + sum(data_fc['daily']['precipitation_sum'][:day_offset+1])
-    avg_wind = np.mean(data_hist['daily']['wind_speed_10m_max'] + data_fc['daily']['wind_speed_10m_max'][:day_offset+1])
-    total_sun = (sum(data_hist['daily']['sunshine_duration']) + sum(data_fc['daily']['sunshine_duration'][:day_offset+1])) / 3600
-    bias = (total_sun * 0.005 * boost) + (avg_wind * 0.002) - (total_rain * 0.14)
+    rain_score = (total_rain + sum(data_fc['daily']['precipitation_sum'][:day_offset+1])) * 0.14
+    sun_score = (total_sun_hours + (sum(data_fc['daily']['sunshine_duration'][:day_offset+1]) / 3600)) * 0.005 * boost
+    wind_score = (avg_wind + np.mean(data_fc['daily']['wind_speed_10m_max'][:day_offset+1])) / 2 * 0.002
+    bias = sun_score + wind_score - rain_score
     return np.clip(bias, -0.30, 0.15)
 
-# DATABASE ORDINATO PER SOLE (Boost differenziati per orario)
 settori = [
     ("🔥 MANGIAFUOCO", 75, 4, 1.30, "Sole dalle ore 09:30"),
     ("🎋 SUPERCANNA", 70, 5, 1.25, "Sud-Ovest"),
@@ -120,6 +142,5 @@ for day in range(3):
                 </div>
             """, unsafe_allow_html=True)
 
-st.write("---")
-if st.button("🔄 AGGIORNA DATI"):
+if st.button("🔄 AGGIORNA"):
     st.rerun()
