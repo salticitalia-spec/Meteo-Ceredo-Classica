@@ -9,12 +9,11 @@ st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="
 
 # --- UTILS ---
 def get_santo(data_obj):
-    # Calendario santi aggiornato per il periodo attuale
     santi = {
         "03-16": "S. Eriberto", 
         "03-17": "S. Patrizio",
         "03-18": "S. Cirillo", 
-        "03-19": "S. Giuseppe (Festa del Papà)", 
+        "03-19": "S. Giuseppe", 
         "03-20": "S. Claudia",
         "03-21": "S. Benedetto"
     }
@@ -34,32 +33,38 @@ mesi_ita = {
 st.markdown("""
     <style>
     .stApp { background-color: #000000 !important; }
-    h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Helvetica', sans-serif; }
+    h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 'Helvetica Neue', sans-serif; }
     
+    /* Banner principale */
     .main-banner {
-        background: linear-gradient(90deg, #111 0%, #00FFFF 50%, #111 100%);
-        padding: 2px; border-radius: 15px; margin-bottom: 20px;
+        background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%);
+        padding: 1px; border-radius: 10px; margin-bottom: 25px;
     }
-    .banner-content { background-color: #000; padding: 15px; border-radius: 13px; text-align: center; }
-    .banner-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0; }
-    .banner-desc { font-size: 14px; color: #00FFFF !important; font-weight: 300; margin-top: 5px; }
+    .banner-content { background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }
+    .banner-title { font-size: 22px; font-weight: 300; letter-spacing: 5px; margin: 0; }
+    .banner-desc { font-size: 11px; color: #00FFFF !important; font-weight: 300; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
     
+    /* Blocco Real-Time Snello */
     .info-block {
-        background-color: #000000; border: 2px solid #FFFFFF; padding: 25px;
-        border-radius: 15px; text-align: center; margin-bottom: 25px;
+        background-color: #000000; border: 1px solid #333; padding: 20px;
+        border-radius: 12px; text-align: center; margin-bottom: 30px;
     }
-    
+    .date-label { font-size: 14px; font-weight: 300; color: #AAA !important; letter-spacing: 1px; }
+    .santo-label { font-size: 10px; color: #00FFFF !important; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
+    .temp-main { font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; letter-spacing: -1px; }
+    .wind-main { font-size: 18px; color: #00FF00 !important; font-weight: 300; letter-spacing: 1px; }
+    .sub-label { font-size: 9px; color: #666 !important; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Cards Previsioni */
     .forecast-card {
-        background-color: #0a0a0a; border: 1px solid #333; padding: 15px;
-        border-radius: 12px; margin-bottom: 10px;
+        background-color: #050505; border: 1px solid #222; padding: 15px;
+        border-radius: 10px; margin-bottom: 8px;
     }
-    .forecast-date { font-size: 18px; font-weight: 800; color: #FFFFFF !important; }
-    .santo-mini { font-size: 11px; color: #00FFFF !important; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    .forecast-date { font-size: 16px; font-weight: 400; }
+    .stat-val { font-size: 16px; font-weight: 300; display: block; }
+    .stat-lab { font-size: 9px; color: #555; text-transform: uppercase; font-weight: bold; }
     
-    .stat-val { font-size: 18px; font-weight: 900; display: block; }
-    .stat-lab { font-size: 9px; color: #AAA; text-transform: uppercase; font-weight: bold; }
-    
-    [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color: #050505; }
+    [data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -77,9 +82,9 @@ try:
     data_fc, data_hist = get_weather_data()
     curr = data_fc['current_weather']
     now = datetime.now()
-    data_str = f"{giorni_ita.get(now.strftime('%A'))} {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
+    data_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
 except:
-    st.error("Errore nel caricamento dati.")
+    st.error("Errore di connessione API.")
     st.stop()
 
 # --- BLOCCO 1: BANNER ---
@@ -92,55 +97,55 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 2: DATA & REAL-TIME ---
+# --- BLOCCO 2: SNELLED REAL-TIME (AGGIORNATO) ---
 st.markdown(f"""
     <div class="info-block">
-        <div class="date-text" style="font-size:20px; font-weight:700;">{data_str}</div>
-        <div class="santo-text" style="color:#00FFFF; font-size:12px; font-weight:bold; letter-spacing:2px;">✨ {get_santo(now)}</div>
-        <div style="font-size: 70px; font-weight: 900; margin: 15px 0;">{curr['temperature']}°</div>
-        <div style="color:#00FF00; font-size:24px; font-weight:800;">💨 {curr['windspeed']} km/h</div>
-        <span style="font-size:10px; color:#AAA; text-transform:uppercase;">Vento Attuale</span>
+        <div class="date-label">{data_str}</div>
+        <div class="santo-label">✨ {get_santo(now)}</div>
+        <div class="temp-main">{curr['temperature']}°</div>
+        <div class="wind-main">💨 {curr['windspeed']} <span style="font-size:12px;">km/h</span></div>
+        <div class="sub-label">vento attuale al settore</div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- NUOVO BLOCCO: PREVISIONI 3 GIORNI ---
-st.header("📅 Previsioni 3 Giorni")
+# --- BLOCCO 3: PREVISIONI 3 GIORNI ---
+st.subheader("Prossimi 3 Giorni")
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
-    d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')} {mesi_ita.get(d_obj.strftime('%B'))}"
+    d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
     
     st.markdown(f"""
         <div class="forecast-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <span class="forecast-date">{d_label}</span><br>
-                    <span class="santo-mini">✨ {get_santo(d_obj)}</span>
+                    <span class="forecast-date">{d_label}</span>
+                    <span style="color:#00FFFF; font-size:10px; margin-left:10px; font-weight:300;">{get_santo(d_obj)}</span>
                 </div>
                 <div style="text-align: right;">
-                    <span style="color:#FF3131; font-weight:900; font-size:20px;">{data_fc['daily']['temperature_2m_max'][i]}°</span>
-                    <span style="color:#AAA; font-size:14px;"> / {data_fc['daily']['temperature_2m_min'][i]}°</span>
+                    <span style="color:#FF3131; font-weight:300; font-size:18px;">{data_fc['daily']['temperature_2m_max'][i]}°</span>
                 </div>
             </div>
-            <div style="display: flex; justify-content: space-between; border-top: 1px solid #222; padding-top: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px solid #111; padding-top: 8px;">
                 <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
                 <div style="text-align:center;"><span class="stat-lab">Vento Max</span><span class="stat-val" style="color:#00FF00;">{data_fc['daily']['windspeed_10m_max'][i]}k/h</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Umidità</span><span class="stat-val">Media</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Minima</span><span class="stat-val">{data_fc['daily']['temperature_2m_min'][i]}°</span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-# --- BLOCCO 3: ANALISI STORICA ---
-st.header("📊 Analisi Storica (10 GG)")
-st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b>", unsafe_allow_html=True)
+# --- BLOCCO 4: ANALISI STORICA ---
+st.write("---")
+st.subheader("Analisi Storica 10 GG")
+st.markdown("<span style='font-size:10px; color:#00FFFF;'>● Pioggia (x10)</span> <span style='font-size:10px; color:#00FF00; margin-left:10px;'>● Vento</span> <span style='font-size:10px; color:#FFFF00; margin-left:10px;'>● Irragg (W/50)</span>", unsafe_allow_html=True)
 
 df_hist = pd.DataFrame({
     'Data': pd.to_datetime(data_hist['hourly']['time']),
-    'Pioggia (x10)': [x * 10 for x in data_hist['hourly']['precipitation']],
-    'Vento (km/h)': data_hist['hourly']['windspeed_10m'],
-    'Irragg (W/50)': [x / 50 for x in data_hist['hourly']['shortwave_radiation']]
+    'Pioggia': [x * 10 for x in data_hist['hourly']['precipitation']],
+    'Vento': data_hist['hourly']['windspeed_10m'],
+    'Irragg': [x / 50 for x in data_hist['hourly']['shortwave_radiation']]
 }).set_index('Data')
 st.line_chart(df_hist, color=["#00FFFF", "#00FF00", "#FFFF00"])
 
-if st.button("🔄 AGGIORNA"):
+if st.button("Aggiorna"):
     st.cache_data.clear()
     st.rerun()
