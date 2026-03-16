@@ -24,25 +24,27 @@ def get_santo(data_obj):
 giorni_ita = {"Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì", "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"}
 mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 
-# --- FUNZIONE PARAMETRICA ASCIUGATURA (MOSTRO BOVINO INDEX) ---
+# --- MOSTRO BOVINO INDEX (ALGORITMO PERITO MECCANICO - MODELLO BOSCO) ---
 def calcola_stato_parete(data_hist):
     try:
         pioggia_oraria = data_hist['hourly']['precipitation']
-        # Peso decrescente della pioggia (ultime 240 ore = 10 giorni)
-        recent = sum(pioggia_oraria[-72:])    # Ultimi 3gg (Peso 100%)
-        medium = sum(pioggia_oraria[-168:-72]) # Da 4 a 7gg fa (Peso 50%)
-        remote = sum(pioggia_oraria[-240:-168])# Da 8 a 10gg fa (Peso 20%)
         
-        carico_idrico = (recent * 1.0) + (medium * 0.5) + (remote * 0.2)
+        # Integrazione pesata su 240 ore (10 giorni)
+        # Il bosco aumenta la ritenzione: alziamo i pesi medium e remote
+        recent = sum(pioggia_oraria[-72:])     # 0-3gg (Peso 1.0)
+        medium = sum(pioggia_oraria[-168:-72])  # 4-7gg (Peso 0.7 - Effetto Bosco)
+        remote = sum(pioggia_oraria[-240:-168]) # 8-10gg (Peso 0.4 - Inerzia Canne)
+        
+        carico_idrico = (recent * 1.0) + (medium * 0.7) + (remote * 0.4)
         
         if carico_idrico < 5:
-            return "SECCO ☀️", "#00FFFF", "Ottime condizioni. Roccia polverosa."
-        elif carico_idrico < 15:
-            return "UMIDO 💧", "#FFFF00", "In asciugatura. Possibili canne bagnate."
+            return "SECCO ☀️", "#00FFFF", "Scarico idraulico completato. Canne ok."
+        elif carico_idrico < 18: # Alzata leggermente la soglia per tolleranza bosco
+            return "UMIDO 💧", "#FFFF00", "Transitorio: bosco in rilascio. Canne saponose."
         else:
-            return "BAGNATO ⚠️", "#FF3131", "Infiltrazioni attive. Parete al 50%."
+            return "BAGNATO ⚠️", "#FF3131", "Saturazione semielisse. Canne attive (50%)."
     except:
-        return "N.D.", "#333", "Dati storici non disponibili."
+        return "N.D.", "#333", "Errore lettura sensori storici."
 
 # --- STILE CSS ---
 st.markdown(f"""
@@ -117,11 +119,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- MOSTRO BOVINO INDEX (INTEGRATO) ---
+# --- MOSTRO BOVINO INDEX (INTEGRATO E AGGIORNATO) ---
 stato_t, stato_c, stato_d = calcola_stato_parete(data_hist)
 st.markdown(f"""
     <div style="background-color: #000; border: 1px solid {stato_c}; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-        <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">Mostro Bovino Index (10gg memory)</div>
+        <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">Mostro Bovino Index (Modello Bosco)</div>
         <div style="font-size: 22px; color: {stato_c}; font-weight: bold; letter-spacing: 1px;">{stato_t}</div>
         <div style="font-size: 11px; color: #888; margin-top: 5px;">{stato_d}</div>
     </div>
@@ -141,8 +143,6 @@ st.markdown(f"""
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-    
-    # Conversione MJ -> KJ
     irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i] * 1000)
     
     if irraggiamento_kj < THRESHOLD_LOW:
