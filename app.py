@@ -68,7 +68,6 @@ st.markdown("""
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    # Inclusione shortwave_radiation_sum nei dati daily
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,windspeed_10m_max,shortwave_radiation_sum&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
@@ -94,7 +93,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 2: REAL-TIME ---
+# --- BLOCCO 2: REAL-TIME SNELLED ---
 st.markdown(f"""
     <div class="info-block">
         <div class="date-label">{data_str}</div>
@@ -105,13 +104,13 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 3: PREVISIONI 3 GIORNI (AGGIORNATO) ---
+# --- BLOCCO 3: PREVISIONI 3 GIORNI (KJ/m²) ---
 st.subheader("Prossimi 3 Giorni")
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-    # Conversione radiazione da KJ a MJ per leggibilità
-    irraggiamento = round(data_fc['daily']['shortwave_radiation_sum'][i] / 1000, 1)
+    # Conversione radiazione: Open-Meteo fornisce MJ/m² in daily, moltiplico per 1000 per KJ/m²
+    irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i])
     
     st.markdown(f"""
         <div class="forecast-card">
@@ -127,7 +126,7 @@ for i in range(3):
             <div style="display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px solid #111; padding-top: 8px;">
                 <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
                 <div style="text-align:center;"><span class="stat-lab">Vento Max</span><span class="stat-val" style="color:#00FF00;">{data_fc['daily']['windspeed_10m_max'][i]}k/h</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Irragg. Totale</span><span class="stat-val" style="color:#FFFF00;">{irraggiamento} <span style="font-size:10px;">MJ/m²</span></span></div>
+                <div style="text-align:center;"><span class="stat-lab">Irragg. Totale</span><span class="stat-val" style="color:#FFFF00;">{irraggiamento_kj} <span style="font-size:9px;">KJ/m²</span></span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
