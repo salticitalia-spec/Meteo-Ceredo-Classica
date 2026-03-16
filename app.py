@@ -7,60 +7,61 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
+# --- PARAMETRI DI SOGLIA ---
+THRESHOLD_LOW = 7000   
+THRESHOLD_HIGH = 15000 
+
 # --- UTILS ---
 def get_santo(data_obj):
     santi = {
-        "03-16": "S. Eriberto", 
-        "03-17": "S. Patrizio",
-        "03-18": "S. Cirillo", 
-        "03-19": "S. Giuseppe", 
-        "03-20": "S. Claudia",
-        "03-21": "S. Benedetto"
+        "03-16": "S. Eriberto", "03-17": "S. Patrizio", "03-18": "S. Cirillo", 
+        "03-19": "S. Giuseppe", "03-20": "S. Claudia", "03-21": "S. Benedetto"
     }
     key = data_obj.strftime("%m-%d")
     return santi.get(key, "S. del Giorno")
 
-giorni_ita = {
-    "Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì",
-    "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"
-}
-
-mesi_ita = {
-    "March": "Marzo", "April": "Aprile", "May": "Maggio"
-}
+giorni_ita = {"Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì", "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"}
+mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 
 # --- STILE CSS ---
-st.markdown("""
+st.markdown(f"""
     <style>
-    .stApp { background-color: #000000 !important; }
-    h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', sans-serif; }
+    .stApp {{ background-color: #000000 !important; }}
+    h1, h2, h3, h4, p, span, div {{ color: #FFFFFF !important; font-family: 'Inter', sans-serif; }}
     
-    .main-banner {
+    .main-banner {{
         background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%);
         padding: 1px; border-radius: 10px; margin-bottom: 25px;
     }
-    .banner-content { background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }
-    .banner-title { font-size: 22px; font-weight: 300; letter-spacing: 5px; margin: 0; }
-    .banner-desc { font-size: 11px; color: #00FFFF !important; font-weight: 300; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
+    .banner-content {{ background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }}
+    .banner-title {{ font-size: 22px; font-weight: 300; letter-spacing: 5px; margin: 0; }}
+    .banner-desc {{ font-size: 11px; color: #00FFFF !important; font-weight: 300; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }}
     
-    .info-block {
+    .info-block {{
         background-color: #000000; border: 1px solid #333; padding: 20px;
         border-radius: 12px; text-align: center; margin-bottom: 30px;
-    }
-    .date-label { font-size: 14px; font-weight: 300; color: #AAA !important; }
-    .santo-label { font-size: 10px; color: #00FFFF !important; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; }
-    .temp-main { font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; }
-    .wind-main { font-size: 18px; color: #00FF00 !important; font-weight: 300; }
-
-    .forecast-card {
+    }}
+    .temp-main {{ font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; }}
+    
+    .forecast-card {{
         background-color: #050505; border: 1px solid #222; padding: 15px;
         border-radius: 10px; margin-bottom: 8px;
-    }
-    .forecast-date { font-size: 16px; font-weight: 400; }
-    .stat-val { font-size: 16px; font-weight: 300; display: block; }
-    .stat-lab { font-size: 9px; color: #555; text-transform: uppercase; font-weight: bold; }
+    }}
     
-    [data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
+    /* Legenda Snella */
+    .legenda-container {{
+        display: flex; justify-content: space-around; padding: 10px;
+        background-color: #080808; border: 1px solid #222; border-radius: 8px;
+        margin-bottom: 15px;
+    }}
+    .legenda-item {{ font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 400; }}
+    .dot {{ height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }}
+
+    .irr-low {{ color: #FF3131 !important; }}      
+    .irr-mid {{ color: #FFFF00 !important; }}      
+    .irr-high {{ color: #FFD700 !important; font-weight: 600 !important; }} 
+
+    [data-testid="stChart"] {{ border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -83,40 +84,48 @@ except:
     st.error("Errore API.")
     st.stop()
 
-# --- BLOCCO 1: BANNER ---
-st.markdown(f"""
-    <div class="main-banner">
-        <div class="banner-content">
-            <div class="banner-title">CEREDOLESO PRO</div>
-            <div class="banner-desc">previsioni meteo falesia di ceredo</div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+# --- HEADER ---
+st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">CEREDOLESO PRO</div><div class="banner-desc">previsioni meteo falesia di ceredo</div></div></div>', unsafe_allow_html=True)
 
-# --- BLOCCO 2: REAL-TIME SNELLED ---
+# --- REAL-TIME ---
 st.markdown(f"""
     <div class="info-block">
-        <div class="date-label">{data_str}</div>
-        <div class="santo-label">✨ {get_santo(now)}</div>
+        <div style="font-size: 14px; font-weight: 300; color: #AAA !important;">{data_str}</div>
+        <div style="font-size: 10px; color: #00FFFF !important; text-transform: uppercase; letter-spacing: 2px;">✨ {get_santo(now)}</div>
         <div class="temp-main">{curr['temperature']}°</div>
-        <div class="wind-main">💨 {curr['windspeed']} <span style="font-size:12px;">km/h</span></div>
-        <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top:5px;">stato attuale al settore</div>
+        <div style="font-size: 18px; color: #00FF00 !important; font-weight: 300;">💨 {curr['windspeed']} <span style="font-size:12px;">km/h</span></div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 3: PREVISIONI 3 GIORNI (KJ/m²) ---
+# --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
+
+# LEGENDA USER-FRIENDLY
+st.markdown(f"""
+    <div class="legenda-container">
+        <div class="legenda-item"><span class="dot" style="background-color: #FFD700;"></span>Asciugatura Rapida</div>
+        <div class="legenda-item"><span class="dot" style="background-color: #FFFF00;"></span>Standard</div>
+        <div class="legenda-item"><span class="dot" style="background-color: #FF3131;"></span>Lenta/Umidità</div>
+    </div>
+""", unsafe_allow_html=True)
+
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-    # Conversione radiazione: Open-Meteo fornisce MJ/m² in daily, moltiplico per 1000 per KJ/m²
     irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i])
+    
+    if irraggiamento_kj < THRESHOLD_LOW:
+        irr_class = "irr-low"
+    elif irraggiamento_kj > THRESHOLD_HIGH:
+        irr_class = "irr-high"
+    else:
+        irr_class = "irr-mid"
     
     st.markdown(f"""
         <div class="forecast-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <span class="forecast-date">{d_label}</span>
+                    <span style="font-size: 16px; font-weight: 400;">{d_label}</span>
                     <span style="color:#00FFFF; font-size:10px; margin-left:10px; font-weight:300;">{get_santo(d_obj)}</span>
                 </div>
                 <div style="text-align: right;">
@@ -124,18 +133,16 @@ for i in range(3):
                 </div>
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px solid #111; padding-top: 8px;">
-                <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Vento Max</span><span class="stat-val" style="color:#00FF00;">{data_fc['daily']['windspeed_10m_max'][i]}k/h</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Irragg. Totale</span><span class="stat-val" style="color:#FFFF00;">{irraggiamento_kj} <span style="font-size:9px;">KJ/m²</span></span></div>
+                <div style="text-align:center;"><span style="font-size: 9px; color: #555; text-transform: uppercase; font-weight: bold;">Pioggia</span><span style="font-size: 16px; font-weight: 300; display: block; color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
+                <div style="text-align:center;"><span style="font-size: 9px; color: #555; text-transform: uppercase; font-weight: bold;">Vento Max</span><span style="font-size: 16px; font-weight: 300; display: block; color:#00FF00;">{data_fc['daily']['windspeed_10m_max'][i]}k/h</span></div>
+                <div style="text-align:center;"><span style="font-size: 9px; color: #555; text-transform: uppercase; font-weight: bold;">Irragg. Totale</span><span class="stat-val {irr_class}">{irraggiamento_kj} <span style="font-size:9px;">KJ/m²</span></span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-# --- BLOCCO 4: ANALISI STORICA ---
+# --- ANALISI STORICA ---
 st.write("---")
 st.subheader("Analisi Storica 10 GG")
-st.markdown("<span style='font-size:10px; color:#00FFFF;'>● Pioggia (x10)</span> <span style='font-size:10px; color:#00FF00; margin-left:10px;'>● Vento</span> <span style='font-size:10px; color:#FFFF00; margin-left:10px;'>● Irragg (W/50)</span>", unsafe_allow_html=True)
-
 df_hist = pd.DataFrame({
     'Data': pd.to_datetime(data_hist['hourly']['time']),
     'Pioggia': [x * 10 for x in data_hist['hourly']['precipitation']],
