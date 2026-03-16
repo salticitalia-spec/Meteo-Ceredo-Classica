@@ -9,12 +9,12 @@ st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="
 
 # --- UTILS ---
 def get_santo(data_obj):
+    # Calendario santi aggiornato per il periodo attuale
     santi = {
-        "03-15": "S. Zaccaria", 
         "03-16": "S. Eriberto", 
         "03-17": "S. Patrizio",
         "03-18": "S. Cirillo", 
-        "03-19": "S. Giuseppe", 
+        "03-19": "S. Giuseppe (Festa del Papà)", 
         "03-20": "S. Claudia",
         "03-21": "S. Benedetto"
     }
@@ -27,9 +27,7 @@ giorni_ita = {
 }
 
 mesi_ita = {
-    "January": "Gennaio", "February": "Febbraio", "March": "Marzo", "April": "Aprile",
-    "May": "Maggio", "June": "Giugno", "July": "Luglio", "August": "Agosto",
-    "September": "Settembre", "October": "Ottobre", "November": "Novembre", "December": "Dicembre"
+    "March": "Marzo", "April": "Aprile", "May": "Maggio"
 }
 
 # --- STILE CSS ---
@@ -43,21 +41,23 @@ st.markdown("""
         padding: 2px; border-radius: 15px; margin-bottom: 20px;
     }
     .banner-content { background-color: #000; padding: 15px; border-radius: 13px; text-align: center; }
-    .banner-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0; line-height: 1.2; }
-    .banner-desc { font-size: 14px; color: #00FFFF !important; font-weight: 300; margin-top: 5px; letter-spacing: 1px; }
+    .banner-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0; }
+    .banner-desc { font-size: 14px; color: #00FFFF !important; font-weight: 300; margin-top: 5px; }
     
     .info-block {
         background-color: #000000; border: 2px solid #FFFFFF; padding: 25px;
         border-radius: 15px; text-align: center; margin-bottom: 25px;
     }
     
-    .date-text { font-size: 20px; font-weight: 700; color: #FFFFFF !important; margin-bottom: 2px; }
-    .santo-text { font-size: 12px; color: #00FFFF !important; text-transform: uppercase; letter-spacing: 3px; font-weight: bold; }
+    .forecast-card {
+        background-color: #0a0a0a; border: 1px solid #333; padding: 15px;
+        border-radius: 12px; margin-bottom: 10px;
+    }
+    .forecast-date { font-size: 18px; font-weight: 800; color: #FFFFFF !important; }
+    .santo-mini { font-size: 11px; color: #00FFFF !important; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
     
-    .main-temp { font-size: 70px; font-weight: 900; line-height: 1; margin: 20px 0; }
-    .wind-text { font-size: 26px; color: #00FF00 !important; font-weight: 800; }
-    
-    .label-desc { font-size: 10px; color: #AAA !important; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 4px; }
+    .stat-val { font-size: 18px; font-weight: 900; display: block; }
+    .stat-lab { font-size: 9px; color: #AAA; text-transform: uppercase; font-weight: bold; }
     
     [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color: #050505; }
     </style>
@@ -67,7 +67,7 @@ st.markdown("""
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
+    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
@@ -82,7 +82,7 @@ except:
     st.error("Errore nel caricamento dati.")
     st.stop()
 
-# --- BLOCCO 1: BANNER CON DESCRIZIONE CIANO ---
+# --- BLOCCO 1: BANNER ---
 st.markdown(f"""
     <div class="main-banner">
         <div class="banner-content">
@@ -92,21 +92,44 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 2: DATA, SANTO, TEMP, VENTO ---
+# --- BLOCCO 2: DATA & REAL-TIME ---
 st.markdown(f"""
     <div class="info-block">
-        <div class="date-text">{data_str}</div>
-        <div class="santo-text">✨ {get_santo(now)}</div>
-        <div class="main-temp">{curr['temperature']}°</div>
-        <span class="label-desc">Temperatura Attuale</span>
-        <div style="margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
-            <div class="wind-text">💨 {curr['windspeed']} km/h</div>
-            <span class="label-desc">Velocità Vento</span>
-        </div>
+        <div class="date-text" style="font-size:20px; font-weight:700;">{data_str}</div>
+        <div class="santo-text" style="color:#00FFFF; font-size:12px; font-weight:bold; letter-spacing:2px;">✨ {get_santo(now)}</div>
+        <div style="font-size: 70px; font-weight: 900; margin: 15px 0;">{curr['temperature']}°</div>
+        <div style="color:#00FF00; font-size:24px; font-weight:800;">💨 {curr['windspeed']} km/h</div>
+        <span style="font-size:10px; color:#AAA; text-transform:uppercase;">Vento Attuale</span>
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 3: ANALISI STORICA 10 GIORNI ---
+# --- NUOVO BLOCCO: PREVISIONI 3 GIORNI ---
+st.header("📅 Previsioni 3 Giorni")
+for i in range(3):
+    d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
+    d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')} {mesi_ita.get(d_obj.strftime('%B'))}"
+    
+    st.markdown(f"""
+        <div class="forecast-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                    <span class="forecast-date">{d_label}</span><br>
+                    <span class="santo-mini">✨ {get_santo(d_obj)}</span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="color:#FF3131; font-weight:900; font-size:20px;">{data_fc['daily']['temperature_2m_max'][i]}°</span>
+                    <span style="color:#AAA; font-size:14px;"> / {data_fc['daily']['temperature_2m_min'][i]}°</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid #222; padding-top: 10px;">
+                <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Vento Max</span><span class="stat-val" style="color:#00FF00;">{data_fc['daily']['windspeed_10m_max'][i]}k/h</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Umidità</span><span class="stat-val">Media</span></div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- BLOCCO 3: ANALISI STORICA ---
 st.header("📊 Analisi Storica (10 GG)")
 st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b>", unsafe_allow_html=True)
 
@@ -116,20 +139,8 @@ df_hist = pd.DataFrame({
     'Vento (km/h)': data_hist['hourly']['windspeed_10m'],
     'Irragg (W/50)': [x / 50 for x in data_hist['hourly']['shortwave_radiation']]
 }).set_index('Data')
-
 st.line_chart(df_hist, color=["#00FFFF", "#00FF00", "#FFFF00"])
 
-# --- BLOCCO 4: PREVISIONI 72H ---
-st.header("🔮 Previsioni (Prossime 72 Ore)")
-df_fc = pd.DataFrame({
-    'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
-    'Pioggia (x10)': [x * 10 for x in data_fc['hourly']['precipitation'][:72]],
-    'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72],
-    'Irragg (W/50)': [x / 50 for x in data_fc['hourly']['shortwave_radiation'][:72]]
-}).set_index('Data')
-
-st.line_chart(df_fc, color=["#00FFFF", "#00FF00", "#FFFF00"])
-
-if st.button("🔄 REFRESH DATI"):
+if st.button("🔄 AGGIORNA"):
     st.cache_data.clear()
     st.rerun()
