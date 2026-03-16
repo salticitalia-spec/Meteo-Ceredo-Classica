@@ -115,7 +115,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- 1. ORA ---
+# --- 1. ORA ATTUALE ---
 st.markdown(f"""
     <div class="current-meteo">
         <div style="font-size: 50px; font-weight: 900; line-height:1;">{curr['temperature']}°</div>
@@ -152,18 +152,18 @@ for i in range(3):
 
 st.write("---")
 
-# --- 3. GRAFICO ANALISI (SCALATO) ---
-st.subheader("📊 Analisi Combinata (72h)")
+# --- 3. GRAFICO PREVISIONI (72h) ---
+st.subheader("📊 Analisi Combinata (Previsioni 72h)")
 st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
 
-df_chart = pd.DataFrame({
+df_forecast_chart = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
     'Pioggia (x10)': [x * 10 for x in data_fc['hourly']['precipitation'][:72]],
     'Irragg. (W/50)': [x / 50 for x in data_fc['hourly']['shortwave_radiation'][:72]],
     'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
 
-st.line_chart(df_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
+st.line_chart(df_forecast_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
 
 # --- 4. MOSTRO BOVINO INDEX ---
 st.header("🐂 MOSTRO BOVINO INDEX")
@@ -172,7 +172,6 @@ def get_bovino_score(day_offset, boost):
     h_sun = sum(data_hist['daily']['sunshine_duration']) / 3600
     f_rain = sum(data_fc['daily']['precipitation_sum'][:day_offset+1])
     f_sun = sum(data_fc['daily']['sunshine_duration'][:day_offset+1]) / 3600
-    # Formula di asciugatura bilanciata
     bias = ((h_sun + f_sun) * 0.005 * boost) - ((h_rain + f_rain) * 0.14)
     return np.clip(bias, -0.30, 0.15)
 
@@ -199,5 +198,19 @@ for day in range(3):
             """, unsafe_allow_html=True)
 
 st.write("---")
+
+# --- 5. GRAFICO STORICO (10 GIORNI) ---
+st.subheader("📊 Analisi Storica (Ultimi 10 Giorni)")
+st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
+
+df_hist_chart = pd.DataFrame({
+    'Data': pd.to_datetime(data_hist['hourly']['time']),
+    'Pioggia (x10)': [x * 10 for x in data_hist['hourly']['precipitation']],
+    'Irragg. (W/50)': [x / 50 for x in data_hist['hourly']['shortwave_radiation']],
+    'Vento (km/h)': data_hist['hourly']['windspeed_10m']
+}).set_index('Data')
+
+st.line_chart(df_hist_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
+
 if st.button("🔄 AGGIORNA DATI"):
     st.rerun()
