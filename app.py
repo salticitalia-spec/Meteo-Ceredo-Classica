@@ -7,12 +7,40 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- STILE CSS HIGH-CONTRAST ---
+# --- STILE CSS HIGH-CONTRAST + BANNER ---
 st.markdown("""
     <style>
     .stApp { background-color: #000000 !important; }
     h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Helvetica', sans-serif; }
     
+    /* Stile Banner */
+    .main-banner {
+        background: linear-gradient(90deg, #111 0%, #00FFFF 50%, #111 100%);
+        padding: 2px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+    }
+    .banner-content {
+        background-color: #000;
+        padding: 20px;
+        border-radius: 13px;
+        text-align: center;
+    }
+    .banner-title { 
+        font-size: 32px; 
+        font-weight: 900; 
+        letter-spacing: 2px;
+        margin: 0;
+        color: #FFFFFF !important;
+    }
+    .banner-subtitle {
+        font-size: 12px;
+        color: #00FFFF !important;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        margin-top: 5px;
+    }
+
     .current-meteo {
         background-color: #000000; border: 3px solid #FFFFFF; padding: 20px;
         border-radius: 15px; text-align: center; margin-bottom: 20px;
@@ -65,7 +93,15 @@ except:
     st.error("Errore API. Verifica la connessione.")
     st.stop()
 
-st.title("🧗 METEO CEREDOLESO")
+# --- BANNER DI TESTATA ---
+st.markdown("""
+    <div class="main-banner">
+        <div class="banner-content">
+            <div class="banner-title">CEREDOLESO PRO</div>
+            <div class="banner-subtitle">Precision Drying Analytics</div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- 1. ORA ---
 st.markdown(f"""
@@ -136,7 +172,6 @@ def get_bovino_score(day_offset, boost):
     bias = ((h_sun + f_sun) * 0.005 * boost) - ((h_rain + f_rain) * 0.14)
     return np.clip(bias, -0.30, 0.15)
 
-# CORREZIONE QUI: Parentesi quadra chiusa correttamente alla fine della lista
 settori = [
     ("🔥 MANGIAFUOCO", 75, 4, 1.40, "Sole: 09:30 → 13:30"),
     ("🎋 SUPERCANNA", 70, 5, 1.28, "Sole: 10:30 → 15:00"),
