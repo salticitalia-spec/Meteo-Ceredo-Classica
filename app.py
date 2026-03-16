@@ -15,7 +15,8 @@ def get_santo(data_obj):
         "03-17": "S. Patrizio",
         "03-18": "S. Cirillo", 
         "03-19": "S. Giuseppe", 
-        "03-20": "S. Claudia"
+        "03-20": "S. Claudia",
+        "03-21": "S. Benedetto"
     }
     key = data_obj.strftime("%m-%d")
     return santi.get(key, "S. del Giorno")
@@ -42,20 +43,21 @@ st.markdown("""
         padding: 2px; border-radius: 15px; margin-bottom: 20px;
     }
     .banner-content { background-color: #000; padding: 15px; border-radius: 13px; text-align: center; }
-    .banner-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0; }
+    .banner-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0; line-height: 1.2; }
+    .banner-desc { font-size: 14px; color: #00FFFF !important; font-weight: 300; margin-top: 5px; letter-spacing: 1px; }
     
     .info-block {
-        background-color: #000000; border: 2px solid #FFFFFF; padding: 20px;
+        background-color: #000000; border: 2px solid #FFFFFF; padding: 25px;
         border-radius: 15px; text-align: center; margin-bottom: 25px;
     }
     
-    .date-text { font-size: 18px; font-weight: 700; color: #FFFFFF !important; margin-bottom: 2px; }
+    .date-text { font-size: 20px; font-weight: 700; color: #FFFFFF !important; margin-bottom: 2px; }
     .santo-text { font-size: 12px; color: #00FFFF !important; text-transform: uppercase; letter-spacing: 3px; font-weight: bold; }
     
-    .main-temp { font-size: 65px; font-weight: 900; line-height: 1; margin: 15px 0; }
-    .wind-text { font-size: 24px; color: #00FF00 !important; font-weight: 800; }
+    .main-temp { font-size: 70px; font-weight: 900; line-height: 1; margin: 20px 0; }
+    .wind-text { font-size: 26px; color: #00FF00 !important; font-weight: 800; }
     
-    .label-desc { font-size: 10px; color: #AAA !important; text-transform: uppercase; letter-spacing: 2px; display: block; }
+    .label-desc { font-size: 10px; color: #AAA !important; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 4px; }
     
     [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color: #050505; }
     </style>
@@ -75,22 +77,29 @@ try:
     data_fc, data_hist = get_weather_data()
     curr = data_fc['current_weather']
     now = datetime.now()
-    data_str = f"{giorni_ita[now.strftime('%A')]} {now.strftime('%d')} {mesi_ita[now.strftime('%B')]}"
+    data_str = f"{giorni_ita.get(now.strftime('%A'))} {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
 except:
     st.error("Errore nel caricamento dati.")
     st.stop()
 
-# --- BLOCCO 1: BANNER ---
-st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">CEREDOLESO PRO</div></div></div>', unsafe_allow_html=True)
+# --- BLOCCO 1: BANNER CON DESCRIZIONE CIANO ---
+st.markdown(f"""
+    <div class="main-banner">
+        <div class="banner-content">
+            <div class="banner-title">CEREDOLESO PRO</div>
+            <div class="banner-desc">previsioni meteo falesia di ceredo</div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
-# --- BLOCCO 2: OGGI, SANTO, TEMP, VENTO ---
+# --- BLOCCO 2: DATA, SANTO, TEMP, VENTO ---
 st.markdown(f"""
     <div class="info-block">
         <div class="date-text">{data_str}</div>
         <div class="santo-text">✨ {get_santo(now)}</div>
         <div class="main-temp">{curr['temperature']}°</div>
         <span class="label-desc">Temperatura Attuale</span>
-        <div style="margin-top: 15px;">
+        <div style="margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
             <div class="wind-text">💨 {curr['windspeed']} km/h</div>
             <span class="label-desc">Velocità Vento</span>
         </div>
@@ -111,7 +120,7 @@ df_hist = pd.DataFrame({
 st.line_chart(df_hist, color=["#00FFFF", "#00FF00", "#FFFF00"])
 
 # --- BLOCCO 4: PREVISIONI 72H ---
-st.header("🔮 Previsioni (72 Ore)")
+st.header("🔮 Previsioni (Prossime 72 Ore)")
 df_fc = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
     'Pioggia (x10)': [x * 10 for x in data_fc['hourly']['precipitation'][:72]],
