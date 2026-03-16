@@ -14,8 +14,9 @@ THRESHOLD_HIGH = 15000
 # --- UTILS ---
 def get_santo(data_obj):
     santi = {
-        "03-16": "S. Eriberto", "03-17": "S. Patrizio", "03-18": "S. Cirillo", 
-        "03-19": "S. Giuseppe", "03-20": "S. Claudia", "03-21": "S. Benedetto"
+        "03-15": "S. Zaccaria", "03-16": "S. Eriberto", "03-17": "S. Patrizio",
+        "03-18": "S. Cirillo", "03-19": "S. Giuseppe", "03-20": "S. Claudia",
+        "03-21": "S. Benedetto"
     }
     key = data_obj.strftime("%m-%d")
     return santi.get(key, "S. del Giorno")
@@ -23,7 +24,7 @@ def get_santo(data_obj):
 giorni_ita = {"Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì", "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"}
 mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 
-# --- STILE CSS ---
+# --- STILE CSS (SISTEMATO CON DOPPIE GRAFFE PER EVITARE SYNTAX ERROR) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #000000 !important; }}
@@ -32,7 +33,7 @@ st.markdown(f"""
     .main-banner {{
         background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%);
         padding: 1px; border-radius: 10px; margin-bottom: 25px;
-    }
+    }}
     .banner-content {{ background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }}
     .banner-title {{ font-size: 22px; font-weight: 300; letter-spacing: 5px; margin: 0; }}
     .banner-desc {{ font-size: 11px; color: #00FFFF !important; font-weight: 300; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }}
@@ -48,7 +49,6 @@ st.markdown(f"""
         border-radius: 10px; margin-bottom: 8px;
     }}
     
-    /* Legenda Snella */
     .legenda-container {{
         display: flex; justify-content: space-around; padding: 10px;
         background-color: #080808; border: 1px solid #222; border-radius: 8px;
@@ -100,7 +100,6 @@ st.markdown(f"""
 # --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
 
-# LEGENDA USER-FRIENDLY
 st.markdown(f"""
     <div class="legenda-container">
         <div class="legenda-item"><span class="dot" style="background-color: #FFD700;"></span>Asciugatura Rapida</div>
