@@ -24,7 +24,7 @@ def get_santo(data_obj):
 giorni_ita = {"Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì", "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"}
 mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 
-# --- STILE CSS (SISTEMATO CON DOPPIE GRAFFE PER EVITARE SYNTAX ERROR) ---
+# --- STILE CSS ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #000000 !important; }}
@@ -57,9 +57,10 @@ st.markdown(f"""
     .legenda-item {{ font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 400; }}
     .dot {{ height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }}
 
-    .irr-low {{ color: #FF3131 !important; }}      
-    .irr-mid {{ color: #FFFF00 !important; }}      
-    .irr-high {{ color: #FFD700 !important; font-weight: 600 !important; }} 
+    /* Colori Irraggiamento */
+    .irr-low {{ color: #FF3131 !important; }}      /* Rosso */
+    .irr-mid {{ color: #FFFF00 !important; }}      /* Giallo */
+    .irr-high {{ color: #00FFFF !important; font-weight: 600 !important; }} /* Ciano */
 
     [data-testid="stChart"] {{ border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }}
     </style>
@@ -100,9 +101,10 @@ st.markdown(f"""
 # --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
 
+# LEGENDA AGGIORNATA IN CIANO
 st.markdown(f"""
     <div class="legenda-container">
-        <div class="legenda-item"><span class="dot" style="background-color: #FFD700;"></span>Asciugatura Rapida</div>
+        <div class="legenda-item"><span class="dot" style="background-color: #00FFFF;"></span>Asciugatura Rapida</div>
         <div class="legenda-item"><span class="dot" style="background-color: #FFFF00;"></span>Standard</div>
         <div class="legenda-item"><span class="dot" style="background-color: #FF3131;"></span>Lenta/Umidità</div>
     </div>
