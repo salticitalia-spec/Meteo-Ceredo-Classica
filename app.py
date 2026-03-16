@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- PARAMETRI DI SOGLIA ---
+# --- PARAMETRI DI SOGLIA AGGIORNATI ---
 THRESHOLD_LOW = 7000   
-THRESHOLD_HIGH = 15000 
+THRESHOLD_HIGH = 13500 # Soglia abbassata per maggiore coerenza primaverile
 
 # --- UTILS ---
 def get_santo(data_obj):
@@ -57,10 +57,9 @@ st.markdown(f"""
     .legenda-item {{ font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 400; }}
     .dot {{ height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }}
 
-    /* Colori Irraggiamento */
-    .irr-low {{ color: #FF3131 !important; }}      /* Rosso */
-    .irr-mid {{ color: #FFFF00 !important; }}      /* Giallo */
-    .irr-high {{ color: #00FFFF !important; font-weight: 600 !important; }} /* Ciano */
+    .irr-low {{ color: #FF3131 !important; }}      
+    .irr-mid {{ color: #FFFF00 !important; }}      
+    .irr-high {{ color: #00FFFF !important; font-weight: 600 !important; }} 
 
     [data-testid="stChart"] {{ border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }}
     </style>
@@ -101,7 +100,6 @@ st.markdown(f"""
 # --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
 
-# LEGENDA AGGIORNATA IN CIANO
 st.markdown(f"""
     <div class="legenda-container">
         <div class="legenda-item"><span class="dot" style="background-color: #00FFFF;"></span>Asciugatura Rapida</div>
