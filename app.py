@@ -61,6 +61,11 @@ st.markdown("""
         border-radius: 15px; text-align: center; margin-bottom: 20px;
     }
     
+    .label-desc {
+        font-size: 10px; color: #AAA !important; text-transform: uppercase;
+        letter-spacing: 2px; font-weight: bold; display: block; margin-top: 5px;
+    }
+    
     .daily-card {
         background-color: #0a0a0a; border: 1px solid #333; padding: 15px;
         border-radius: 12px; margin-bottom: 8px;
@@ -89,13 +94,10 @@ st.markdown("""
 # --- RECUPERO DATI API ---
 def get_all_data():
     lat, lon = 45.6117, 10.9710
-    # Forecast 72h
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunshine_duration,shortwave_radiation_sum&timezone=Europe%2FRome"
-    # Archive 10 days
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&daily=precipitation_sum,sunshine_duration&timezone=Europe%2FRome"
-    
     return requests.get(url_fc).json(), requests.get(url_hist).json()
 
 try:
@@ -115,11 +117,17 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- 1. ORA ATTUALE ---
+# --- 1. ORA ATTUALE (CON DESCRIZIONI) ---
 st.markdown(f"""
     <div class="current-meteo">
-        <div style="font-size: 50px; font-weight: 900; line-height:1;">{curr['temperature']}°</div>
-        <div style="font-size: 20px; color: #00FF00 !important; font-weight: 900; margin-top:8px;">💨 {curr['windspeed']} km/h</div>
+        <div style="margin-bottom: 15px;">
+            <div style="font-size: 50px; font-weight: 900; line-height:1;">{curr['temperature']}°</div>
+            <span class="label-desc">Temperatura Attuale</span>
+        </div>
+        <div>
+            <div style="font-size: 20px; color: #00FF00 !important; font-weight: 900;">💨 {curr['windspeed']} km/h</div>
+            <span class="label-desc">Velocità Vento</span>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
