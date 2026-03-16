@@ -111,7 +111,6 @@ st.markdown(f"""
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-    # Modifica questa riga nel ciclo for:
 irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i]) * 1000
     
     if irraggiamento_kj < THRESHOLD_LOW:
