@@ -24,6 +24,26 @@ def get_santo(data_obj):
 giorni_ita = {"Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì", "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"}
 mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 
+# --- FUNZIONE PARAMETRICA ASCIUGATURA (MOSTRO BOVINO INDEX) ---
+def calcola_stato_parete(data_hist):
+    try:
+        pioggia_oraria = data_hist['hourly']['precipitation']
+        # Peso decrescente della pioggia (ultime 240 ore = 10 giorni)
+        recent = sum(pioggia_oraria[-72:])    # Ultimi 3gg (Peso 100%)
+        medium = sum(pioggia_oraria[-168:-72]) # Da 4 a 7gg fa (Peso 50%)
+        remote = sum(pioggia_oraria[-240:-168])# Da 8 a 10gg fa (Peso 20%)
+        
+        carico_idrico = (recent * 1.0) + (medium * 0.5) + (remote * 0.2)
+        
+        if carico_idrico < 5:
+            return "SECCO ☀️", "#00FFFF", "Ottime condizioni. Roccia polverosa."
+        elif carico_idrico < 15:
+            return "UMIDO 💧", "#FFFF00", "In asciugatura. Possibili canne bagnate."
+        else:
+            return "BAGNATO ⚠️", "#FF3131", "Infiltrazioni attive. Parete al 50%."
+    except:
+        return "N.D.", "#333", "Dati storici non disponibili."
+
 # --- STILE CSS ---
 st.markdown(f"""
     <style>
@@ -40,7 +60,7 @@ st.markdown(f"""
     
     .info-block {{
         background-color: #000000; border: 1px solid #333; padding: 20px;
-        border-radius: 12px; text-align: center; margin-bottom: 30px;
+        border-radius: 12px; text-align: center; margin-bottom: 20px;
     }}
     .temp-main {{ font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; }}
     
@@ -97,6 +117,16 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
+# --- MOSTRO BOVINO INDEX (INTEGRATO) ---
+stato_t, stato_c, stato_d = calcola_stato_parete(data_hist)
+st.markdown(f"""
+    <div style="background-color: #000; border: 1px solid {stato_c}; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+        <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">Mostro Bovino Index (10gg memory)</div>
+        <div style="font-size: 22px; color: {stato_c}; font-weight: bold; letter-spacing: 1px;">{stato_t}</div>
+        <div style="font-size: 11px; color: #888; margin-top: 5px;">{stato_d}</div>
+    </div>
+""", unsafe_allow_html=True)
+
 # --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
 
@@ -108,12 +138,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# CICLO FOR CON INDENTAZIONE CORRETTA
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
     
-    # CORREZIONE: Moltiplico MJ per 1000 per ottenere KJ
+    # Conversione MJ -> KJ
     irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i] * 1000)
     
     if irraggiamento_kj < THRESHOLD_LOW:
