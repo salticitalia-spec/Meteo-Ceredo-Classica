@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- PARAMETRI DI SOGLIA AGGIORNATI ---
+# --- PARAMETRI DI SOGLIA ---
 THRESHOLD_LOW = 7000   
-THRESHOLD_HIGH = 13500 # Soglia abbassata per maggiore coerenza primaverile
+THRESHOLD_HIGH = 13500 
 
 # --- UTILS ---
 def get_santo(data_obj):
@@ -108,10 +108,13 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
+# CICLO FOR CON INDENTAZIONE CORRETTA
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i]) * 1000
+    
+    # CORREZIONE: Moltiplico MJ per 1000 per ottenere KJ
+    irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i] * 1000)
     
     if irraggiamento_kj < THRESHOLD_LOW:
         irr_class = "irr-low"
