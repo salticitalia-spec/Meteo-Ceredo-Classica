@@ -33,9 +33,8 @@ mesi_ita = {
 st.markdown("""
     <style>
     .stApp { background-color: #000000 !important; }
-    h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 'Helvetica Neue', sans-serif; }
+    h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', sans-serif; }
     
-    /* Banner principale */
     .main-banner {
         background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%);
         padding: 1px; border-radius: 10px; margin-bottom: 25px;
@@ -44,18 +43,15 @@ st.markdown("""
     .banner-title { font-size: 22px; font-weight: 300; letter-spacing: 5px; margin: 0; }
     .banner-desc { font-size: 11px; color: #00FFFF !important; font-weight: 300; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
     
-    /* Blocco Real-Time Snello */
     .info-block {
         background-color: #000000; border: 1px solid #333; padding: 20px;
         border-radius: 12px; text-align: center; margin-bottom: 30px;
     }
-    .date-label { font-size: 14px; font-weight: 300; color: #AAA !important; letter-spacing: 1px; }
-    .santo-label { font-size: 10px; color: #00FFFF !important; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
-    .temp-main { font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; letter-spacing: -1px; }
-    .wind-main { font-size: 18px; color: #00FF00 !important; font-weight: 300; letter-spacing: 1px; }
-    .sub-label { font-size: 9px; color: #666 !important; text-transform: uppercase; letter-spacing: 1px; }
+    .date-label { font-size: 14px; font-weight: 300; color: #AAA !important; }
+    .santo-label { font-size: 10px; color: #00FFFF !important; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; }
+    .temp-main { font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; }
+    .wind-main { font-size: 18px; color: #00FF00 !important; font-weight: 300; }
 
-    /* Cards Previsioni */
     .forecast-card {
         background-color: #050505; border: 1px solid #222; padding: 15px;
         border-radius: 10px; margin-bottom: 8px;
@@ -72,7 +68,8 @@ st.markdown("""
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=Europe%2FRome"
+    # Inclusione shortwave_radiation_sum nei dati daily
+    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,windspeed_10m_max,shortwave_radiation_sum&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
@@ -84,7 +81,7 @@ try:
     now = datetime.now()
     data_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
 except:
-    st.error("Errore di connessione API.")
+    st.error("Errore API.")
     st.stop()
 
 # --- BLOCCO 1: BANNER ---
@@ -97,22 +94,24 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 2: SNELLED REAL-TIME (AGGIORNATO) ---
+# --- BLOCCO 2: REAL-TIME ---
 st.markdown(f"""
     <div class="info-block">
         <div class="date-label">{data_str}</div>
         <div class="santo-label">✨ {get_santo(now)}</div>
         <div class="temp-main">{curr['temperature']}°</div>
         <div class="wind-main">💨 {curr['windspeed']} <span style="font-size:12px;">km/h</span></div>
-        <div class="sub-label">vento attuale al settore</div>
+        <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top:5px;">stato attuale al settore</div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- BLOCCO 3: PREVISIONI 3 GIORNI ---
+# --- BLOCCO 3: PREVISIONI 3 GIORNI (AGGIORNATO) ---
 st.subheader("Prossimi 3 Giorni")
 for i in range(3):
     d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
     d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
+    # Conversione radiazione da KJ a MJ per leggibilità
+    irraggiamento = round(data_fc['daily']['shortwave_radiation_sum'][i] / 1000, 1)
     
     st.markdown(f"""
         <div class="forecast-card">
@@ -122,13 +121,13 @@ for i in range(3):
                     <span style="color:#00FFFF; font-size:10px; margin-left:10px; font-weight:300;">{get_santo(d_obj)}</span>
                 </div>
                 <div style="text-align: right;">
-                    <span style="color:#FF3131; font-weight:300; font-size:18px;">{data_fc['daily']['temperature_2m_max'][i]}°</span>
+                    <span style="color:#FF3131; font-weight:300; font-size:18px;">Max {data_fc['daily']['temperature_2m_max'][i]}°</span>
                 </div>
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px solid #111; padding-top: 8px;">
                 <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
                 <div style="text-align:center;"><span class="stat-lab">Vento Max</span><span class="stat-val" style="color:#00FF00;">{data_fc['daily']['windspeed_10m_max'][i]}k/h</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Minima</span><span class="stat-val">{data_fc['daily']['temperature_2m_min'][i]}°</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Irragg. Totale</span><span class="stat-val" style="color:#FFFF00;">{irraggiamento} <span style="font-size:10px;">MJ/m²</span></span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
