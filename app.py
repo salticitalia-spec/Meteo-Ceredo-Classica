@@ -104,7 +104,7 @@ try:
     data_fc, data_hist = get_all_data()
     curr = data_fc['current_weather']
 except:
-    st.error("Errore connessione API Open-Meteo")
+    st.error("Errore API. Controlla la connessione.")
     st.stop()
 
 # --- BANNER ---
@@ -117,7 +117,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- 1. ORA ATTUALE (CON DESCRIZIONI) ---
+# --- 1. ORA ATTUALE CON DESCRIZIONI ---
 st.markdown(f"""
     <div class="current-meteo">
         <div style="margin-bottom: 15px;">
@@ -135,45 +135,53 @@ st.markdown(f"""
 st.subheader("📅 Previsioni Settimanali")
 for i in range(3):
     data_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
-    giorno_sett = giorni_ita[data_obj.strftime('%A')]
-    mese_nome = mesi_ita[data_obj.strftime('%B')]
-    data_completa = f"{giorno_sett} {data_obj.strftime('%d')} {mese_nome}"
+    g_ita = giorni_ita[data_obj.strftime('%A')]
+    m_ita = mesi_ita[data_obj.strftime('%B')]
+    data_testo = f"{g_ita} {data_obj.strftime('%d')} {m_ita}"
     santo = get_santo(data_obj)
-    
-    t_max = data_fc['daily']['temperature_2m_max'][i]
-    rain = data_fc['daily']['precipitation_sum'][i]
-    wind = data_fc['daily']['wind_speed_10m_max'][i]
-    irr_sum = round(data_fc['daily']['shortwave_radiation_sum'][i] / 1000, 2)
     
     st.markdown(f"""
         <div class="daily-card">
-            <span class="daily-title">{data_completa}</span>
+            <span class="daily-title">{data_testo}</span>
             <span class="santo-text">{santo}</span>
             <div style="display: flex; justify-content: space-between;">
-                <div style="text-align:center;"><span class="stat-lab">Max</span><span class="stat-val" style="color:#FF3131;">{t_max}°</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{rain}mm</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Vento</span><span class="stat-val" style="color:#00FF00;">{wind}k/h</span></div>
-                <div style="text-align:center;"><span class="stat-lab">Irragg.</span><span class="stat-val" style="color:#FFFF00;">{irr_sum}MJ</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Max</span><span class="stat-val" style="color:#FF3131;">{data_fc['daily']['temperature_2m_max'][i]}°</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Pioggia</span><span class="stat-val" style="color:#00FFFF;">{data_fc['daily']['precipitation_sum'][i]}mm</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Vento</span><span class="stat-val" style="color:#00FF00;">{data_fc['daily']['wind_speed_10m_max'][i]}k/h</span></div>
+                <div style="text-align:center;"><span class="stat-lab">Irragg.</span><span class="stat-val" style="color:#FFFF00;">{round(data_fc['daily']['shortwave_radiation_sum'][i]/1000,2)}MJ</span></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- 3. GRAFICO PREVISIONI (72h) ---
+# --- 3. ANALISI COMBINATA PREVISIONI (72h) ---
 st.subheader("📊 Analisi Combinata (Previsioni 72h)")
 st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
-
-df_forecast_chart = pd.DataFrame({
+df_fc = pd.DataFrame({
     'Data': pd.to_datetime(data_fc['hourly']['time'][:72]),
     'Pioggia (x10)': [x * 10 for x in data_fc['hourly']['precipitation'][:72]],
     'Irragg. (W/50)': [x / 50 for x in data_fc['hourly']['shortwave_radiation'][:72]],
     'Vento (km/h)': data_fc['hourly']['windspeed_10m'][:72]
 }).set_index('Data')
+st.line_chart(df_fc, color=["#00FFFF", "#FFFF00", "#00FF00"])
 
-st.line_chart(df_forecast_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
+st.write("---")
 
-# --- 4. MOSTRO BOVINO INDEX ---
+# --- 4. ANALISI STORICA (10 GIORNI) ---
+st.subheader("📊 Analisi Storica (Ultimi 10 Giorni)")
+st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
+df_hist = pd.DataFrame({
+    'Data': pd.to_datetime(data_hist['hourly']['time']),
+    'Pioggia (x10)': [x * 10 for x in data_hist['hourly']['precipitation']],
+    'Irragg. (W/50)': [x / 50 for x in data_hist['hourly']['shortwave_radiation']],
+    'Vento (km/h)': data_hist['hourly']['windspeed_10m']
+}).set_index('Data')
+st.line_chart(df_hist, color=["#00FFFF", "#FFFF00", "#00FF00"])
+
+st.write("---")
+
+# --- 5. MOSTRO BOVINO INDEX (IN FONDO) ---
 st.header("🐂 MOSTRO BOVINO INDEX")
 def get_bovino_score(day_offset, boost):
     h_rain = sum(data_hist['daily']['precipitation_sum'])
@@ -206,19 +214,5 @@ for day in range(3):
             """, unsafe_allow_html=True)
 
 st.write("---")
-
-# --- 5. GRAFICO STORICO (10 GIORNI) ---
-st.subheader("📊 Analisi Storica (Ultimi 10 Giorni)")
-st.markdown("<b style='color:#00FFFF;'>■ Pioggia (mm x10)</b> | <b style='color:#FFFF00;'>■ Irragg. (W/50)</b> | <b style='color:#00FF00;'>■ Vento (km/h)</b>", unsafe_allow_html=True)
-
-df_hist_chart = pd.DataFrame({
-    'Data': pd.to_datetime(data_hist['hourly']['time']),
-    'Pioggia (x10)': [x * 10 for x in data_hist['hourly']['precipitation']],
-    'Irragg. (W/50)': [x / 50 for x in data_hist['hourly']['shortwave_radiation']],
-    'Vento (km/h)': data_hist['hourly']['windspeed_10m']
-}).set_index('Data')
-
-st.line_chart(df_hist_chart, color=["#00FFFF", "#FFFF00", "#00FF00"])
-
 if st.button("🔄 AGGIORNA DATI"):
     st.rerun()
