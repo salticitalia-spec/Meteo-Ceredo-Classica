@@ -4,13 +4,13 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-# --- 1. CONFIGURAZIONE PAGINA (Deve essere la prima istruzione Streamlit) ---
+# --- 1. CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
 # --- 2. PARAMETRI ---
 THRESHOLD_LOW, THRESHOLD_HIGH, CORR_VAJO = 6500, 12000, 0.8
 
-# --- 3. FUNZIONI TECNICHE ---
+# --- 3. FUNZIONI ---
 def get_weather_icon(code):
     icons = {0: "☀️", 1: "☀️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️", 51: "🌧️", 53: "🌧️", 55: "🌧️", 61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 95: "⚡"}
     return icons.get(code, "☁️")
@@ -32,23 +32,24 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- 4. CSS CUSTOM (HEADER +20% E STILE PRO) ---
+# --- 4. CSS (HEADER +20% E UNIFORMITÀ) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
         background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 20px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
+        padding: 22px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
         text-align: center; margin-bottom: 25px;
         display: flex; justify-content: center; align-items: center;
     }
     .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
     
+    /* Ceredoleso aumentato (~17.5px) */
     .title-ceredoleso { 
         color: #0FF !important; 
         font-weight: 100 !important; 
-        font-size: 14.5px; 
+        font-size: 17.5px; 
         letter-spacing: 5px; 
         margin: 0; 
         text-transform: uppercase; 
@@ -59,7 +60,7 @@ st.markdown('''
     .title-pro { 
         color: #0FF !important; 
         font-weight: 100 !important; 
-        font-size: 11px; 
+        font-size: 12px; 
         letter-spacing: 3px; 
         margin-top: 3px; 
         text-transform: uppercase; 
@@ -89,80 +90,60 @@ def fetch_data():
     start_d = (datetime.now() - timedelta(days=11)).strftime('%Y-%m-%d')
     url_hi = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
     try:
-        fc_res = requests.get(url_fc).json()
-        hi_res = requests.get(url_hi).json()
+        fc_res = requests.get(url_fc).json(); hi_res = requests.get(url_hi).json()
         return fc_res, hi_res
     except: return None, None
 
 dfc, dhi = fetch_data()
+if dfc is None: st.error("Errore API"); st.stop()
 
-if dfc is None or 'current_weather' not in dfc:
-    st.error("Errore di connessione alle API Meteo.")
-    st.stop()
-
-# --- 6. LOGICA DATI ATTUALI ---
+# --- 6. OGGI ---
 curr, now = dfc['current_weather'], datetime.now()
 c_temp, c_hum = curr["temperature"], dfc['hourly']['relativehumidity_2m'][now.hour]
-c_rain, c_code = dfc['daily']['precipitation_sum'][0], curr.get("weathercode", 0)
 percepita = calcola_percepita(c_temp, c_hum)
 data_oggi = f"{giorni_ita[now.weekday()]} {now.day} {mesi_ita[now.month-1]}"
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
 rain_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_t}</div>' if rain_t else ""
-cond = "🔥 AFA ELEVATA" if percepita > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
+cond_oggi = "🔥 AFA ELEVATA" if percepita > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
 
-# --- 7. INTERFACCIA UTENTE ---
-
-# Header
 st.markdown(f'''
-<div class="main-banner">
-    <div class="title-wrapper">
-        <div class="title-ceredoleso">Ceredoleso</div>
-        <div class="title-pro">PRO</div>
-    </div>
-</div>
-''', unsafe_allow_html=True)
-
-# Blocco Oggi
-st.markdown(f'''
+<div class="main-banner"><div class="title-wrapper"><div class="title-ceredoleso">Ceredoleso</div><div class="title-pro">PRO</div></div></div>
 <div class="info-card">
     <div class="date-text">{data_oggi}</div>
     <div style="color:#0FF;font-size:11px;margin-bottom:10px;">✨ {get_santo(now)}</div>
-    <div style="font-size:50px;">{get_weather_icon(c_code)}</div>
+    <div style="font-size:50px;">{get_weather_icon(curr["weathercode"])}</div>
     <div class="t-main">{c_temp}°</div>
     <div class="t-perc">Percepita: {percepita}°</div>
     <div class="val-box">
         <div style="color:#0F0;">💨 {curr["windspeed"]}kph</div>
         <div style="color:#FF0;">💧 {c_hum}%</div>
-        <div style="color:#0FF;">🌧️ {c_rain}mm</div>
+        <div style="color:#0FF;">🌧️ {dfc['daily']['precipitation_sum'][0]}mm</div>
     </div>
     {rain_h}
-    <div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond}</div>
+    <div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond_oggi}</div>
 </div>
 ''', unsafe_allow_html=True)
 
-# Mostro Bovino
+# --- 7. MOSTRO BOVINO ---
 if dhi and 'hourly' in dhi:
     p_hist = dhi['hourly']['precipitation']
     carico = (sum(p_hist[-72:]) * 1.0) + (sum(p_hist[-168:-72]) * 0.7)
-    if carico < 5: m_t, m_c, m_d = "SECCO ☀️", "#0FF", "🟢 Ottimo ovunque, anche su Peci & Ostramandra."
-    elif carico < 18: m_t, m_c, m_d = "UMIDO 💧", "#FF0", "🟡 Mangiafuoco e Torre OK. Peci & Ostramandra: canne umide."
-    else: m_t, m_c, m_d = "BAGNATO ⚠️", "#F31", "🔴 Saturazione bosco. Peci & Ostramandra impraticabile."
-    
-    st.markdown(f'''
-    <div style="border:1px solid {m_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;">
-        <div style="font-size:10px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div>
-        <div style="font-size:24px;color:{m_c};font-weight:bold;margin:5px 0;">{m_t}</div>
-        <div style="font-size:13px;color:#999;">{m_d}</div>
-    </div>
-    ''', unsafe_allow_html=True)
+    if carico < 5: m_t, m_c, m_d = "SECCO ☀️", "#0FF", "🟢 Ottimo ovunque."
+    elif carico < 18: m_t, m_c, m_d = "UMIDO 💧", "#FF0", "🟡 Peci & Ostramandra umide."
+    else: m_t, m_c, m_d = "BAGNATO ⚠️", "#F31", "🔴 Bosco saturo."
+    st.markdown(f'<div style="border:1px solid {m_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;"><div style="font-size:10px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div><div style="font-size:24px;color:{m_c};font-weight:bold;margin:5px 0;">{m_t}</div><div style="font-size:13px;color:#999;">{m_d}</div></div>', unsafe_allow_html=True)
 
-# Previsioni 3 Giorni
+# --- 8. PREVISIONI (CORRETTE) ---
 st.subheader("Prossimi 3 Giorni")
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
-    irr = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
-    s_c, s_t = ("#F31", "Rischio Condensa") if irr < THRESHOLD_LOW else (("#0FF", "Asciugatura Rapida") if irr > THRESHOLD_HIGH else ("#FF0", "Asciugatura Lenta"))
-    max_t, hum_i = dfc['daily']['temperature_2m_max'][i], int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
+    max_t = dfc['daily']['temperature_2m_max'][i]
+    hum_i = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
+    perc_i = calcola_percepita(max_t, hum_i)
+    
+    # Calcolo condizione per div giallo sotto
+    cond_i = "🔥 AFA ELEVATA" if perc_i > 30 else ("⚠️ RISCHIO CONDENSA" if hum_i > 75 else "")
+    
     r_t = get_rain_start(dfc['hourly']['precipitation'], i*24)
     r_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {r_t}</div>' if r_t else ""
     dfut = f"{giorni_ita[d_obj.weekday()]} {d_obj.day} {mesi_ita[d_obj.month-1]}"
@@ -179,21 +160,8 @@ for i in range(1, 4):
             <div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div>
         </div>
         {r_h}
-        <div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div>
+        <div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond_i}</div>
     </div>
     ''', unsafe_allow_html=True)
 
-# Grafico Storico
-if dhi and 'hourly' in dhi:
-    st.write("---")
-    st.subheader("Storico 10 Giorni")
-    df_h = pd.DataFrame({
-        'Pioggia (mmx10)': [x*10 for x in dhi['hourly']['precipitation']],
-        'Vento (kph)': dhi['hourly']['windspeed_10m'],
-        'Asciugatura': [x/50 for x in dhi['hourly']['shortwave_radiation']]
-    }, index=pd.to_datetime(dhi['hourly']['time']))
-    st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
-
-if st.button("Aggiorna Dati"):
-    st.cache_data.clear()
-    st.rerun()
+if st.button("Aggiorna"): st.cache_data.clear(); st.rerun()
