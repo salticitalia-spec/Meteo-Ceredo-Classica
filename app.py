@@ -1,4 +1,16 @@
-# --- CSS AGGIORNATO (HEADER +20%) ---
+import streamlit as st  # <--- QUESTA RIGA DEVE ESSERE LA PRIMA
+import requests
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+# --- CONFIGURAZIONE PAGINA ---
+st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
+
+# --- PARAMETRI ---
+THRESHOLD_LOW, THRESHOLD_HIGH, CORR_VAJO = 6500, 12000, 0.8
+
+# --- CSS (CON HEADER +20%) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
@@ -11,7 +23,7 @@ st.markdown('''
     }
     .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
     
-    /* Ceredoleso aumentato di un ulteriore 20% (~14.5px) */
+    /* Ceredoleso ~14.5px */
     .title-ceredoleso { 
         color: #0FF !important; 
         font-weight: 100 !important; 
@@ -23,7 +35,7 @@ st.markdown('''
         font-family: sans-serif;
     }
     
-    /* PRO aumentato proporzionalmente (~11px) */
+    /* PRO ~11px */
     .title-pro { 
         color: #0FF !important; 
         font-weight: 100 !important; 
@@ -35,25 +47,8 @@ st.markdown('''
         font-family: sans-serif;
     }
     
-    .info-card {
-        background-color: #0c0c0c; border: 1px solid #222;
-        padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
-    }
-    .date-text { font-size: 18px; font-weight: bold; color: #fff; }
-    .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
-    .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
-    .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
-    .val-box { display: flex; justify-content: center; gap: 15px; font-size: 17px; margin-top: 10px; }
-    [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color:#020202; }
+    /* ... resto del CSS ... */
 </style>
 ''', unsafe_allow_html=True)
 
-# --- BLOCCO HEADER ---
-st.markdown(f'''
-<div class="main-banner">
-    <div class="title-wrapper">
-        <div class="title-ceredoleso">Ceredoleso</div>
-        <div class="title-pro">PRO</div>
-    </div>
-</div>
-''', unsafe_allow_html=True)
+# ... resto del codice ...
