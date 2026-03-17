@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- PARAMETRI DI SOGLIA ---
-THRESHOLD_LOW = 7000   
-THRESHOLD_HIGH = 13500 
+# --- PARAMETRI DI SOGLIA (PARAMETRIZZATI PER IL VAJO) ---
+# Soglie di insolazione ridotte per riflettere l'ombra portata
+THRESHOLD_LOW = 6500   
+THRESHOLD_HIGH = 12000 
 
 # --- UTILS ---
 def get_santo(data_obj):
@@ -57,6 +58,7 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 .irr-mid { color: #FFFF00 !important; }      
 .irr-high { color: #00FFFF !important; font-weight: 600 !important; } 
 .hum-alert { font-size: 11px; color: #FFA500; text-transform: uppercase; margin-top: 8px; font-weight: bold; letter-spacing: 1px; }
+.legenda-kj { font-size: 10px; color: #666; margin-bottom: 15px; line-height: 1.4; border-left: 2px solid #333; padding-left: 10px; }
 [data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
 </style>
 '''
@@ -89,7 +91,8 @@ except:
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
 
 # --- REAL-TIME & VAJO ALERT ---
-hum_warning = "⚠️ RISCHIO CONDENSA VAJO MARCIORA" if curr_hum > 80 else ""
+# Soglia di umidità ridotta per riflettere il microclima del vajo
+hum_warning = "⚠️ RISCHIO CONDENSA VAJO MARCIORA" if curr_hum > 75 else ""
 st.markdown(f'''
     <div class="info-block">
         <div style="font-size:14px;color:#AAA!important;">{d_str}</div>
@@ -107,15 +110,28 @@ st.markdown(f'''
 st_t, st_c, st_d = calcola_stato_parete(dhi)
 st.markdown(f'<div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;"><div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (Modello Bosco)</div><div style="font-size:22px;color:{st_c};font-weight:bold;">{st_t}</div><div style="font-size:11px;color:#888;">{st_d}</div></div>', unsafe_allow_html=True)
 
-# --- PREVISIONI 3 GIORNI ---
+# --- PREVISIONI 3 GIORNI CON LEGENDA ---
 st.subheader("Prossimi 3 Giorni")
+st.markdown(f'''
+    <div class="legenda-kj">
+        <span style="color:#00FFFF;">● >{THRESHOLD_HIGH} KJ:</span> Asciugatura rapida (Parete Top)<br>
+        <span style="color:#FFFF00;">● {THRESHOLD_LOW}-{THRESHOLD_HIGH} KJ:</span> Asciugatura media<br>
+        <span style="color:#FF3131;">● <{THRESHOLD_LOW} KJ:</span> Asciugatura nulla o scarsa
+    </div>
+''', unsafe_allow_html=True)
+
+# Coefficiente correttivo ombra vajo
+CORR_VAJO = 0.8  
+
 for i in range(3):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     d_lab = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-    irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000)
+    
+    # Irraggiamento solare effettivo corretto
+    irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
+    
     i_cl = "irr-low" if irr_v < THRESHOLD_LOW else ("irr-high" if irr_v > THRESHOLD_HIGH else "irr-mid")
     
-    # Media umidità giornaliera
     avg_hum = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     
     card = f'<div class="forecast-card">'
