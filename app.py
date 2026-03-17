@@ -59,29 +59,24 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 .forecast-card { background-color: #050505; border: 1px solid #222; padding: 15px; border-radius: 10px; margin-bottom: 8px; }
 .hum-alert { font-size: 11px; color: #FFA500; text-transform: uppercase; margin-top: 8px; font-weight: bold; }
 .legenda-kj { font-size: 10px; color: #666; margin-bottom: 15px; border-left: 2px solid #333; padding-left: 10px; }
+[data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
 </style>
 ''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI (URL SPEZZATO PER SICUREZZA) ---
+# --- RECUPERO DATI ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
+    url_fc = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+              "&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation"
+              "&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum"
+              "&timezone=Europe%2FRome")
     
-    # URL Previsioni
-    base_fc = "https://api.open-meteo.com/v1/forecast"
-    params_fc = (f"?latitude={lat}&longitude={lon}&current_weather=true"
-                 "&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation"
-                 "&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum"
-                 "&timezone=Europe%2FRome")
-    url_fc = base_fc + params_fc
-    
-    # URL Storico
     start_d = (datetime.now() - timedelta(days=10)).date().isoformat()
     end_d = datetime.now().date().isoformat()
-    base_hi = "https://archive-api.open-meteo.com/v1/archive"
-    params_hi = (f"?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}"
-                 "&hourly=precipitation&timezone=Europe%2FRome")
-    url_hi = base_hi + params_hi
+    url_hi = (f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}"
+              f"&start_date={start_d}&end_date={end_d}"
+              "&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome")
     
     return requests.get(url_fc).json(), requests.get(url_hi).json()
 
@@ -95,9 +90,10 @@ try:
 except:
     st.error("Errore nel caricamento dati API"); st.stop()
 
-# --- INTERFACCIA ---
+# --- HEADER ---
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
 
+# Alert
 afa_warning = "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ""
 hum_warning = "⚠️ RISCHIO CONDENSA VAJO" if curr_hum > 75 else ""
 alert_text = afa_warning if afa_warning else hum_warning
@@ -116,15 +112,17 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
+# --- MOSTRO BOVINO INDEX (SETTORI) ---
 st_t, st_c, st_d = calcola_stato_parete(dhi)
 st.markdown(f'''
 <div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;">
-    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (Modello Bosco)</div>
+    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (KJ/mq = Asciugatura)</div>
     <div style="font-size:22px;color:{st_c};font-weight:bold;">{st_t}</div>
     <div style="font-size:11px;color:#888;">{st_d}</div>
 </div>
 ''', unsafe_allow_html=True)
 
+# --- PREVISIONI ---
 st.subheader("Prossimi 3 Giorni")
 st.markdown(f'''
 <div class="legenda-kj">
@@ -155,6 +153,20 @@ for i in range(3):
         </div>
     </div>
     ''', unsafe_allow_html=True)
+
+# --- STORICO 10 GIORNI ---
+st.write("---")
+st.subheader("Storico 10 Giorni")
+try:
+    df_h = pd.DataFrame({
+        'Data': pd.to_datetime(dhi['hourly']['time']),
+        'Pioggia (mm)': [x*10 for x in dhi['hourly']['precipitation']],
+        'Vento (km/h)': dhi['hourly']['windspeed_10m'],
+        'Asciugatura (KJ)': [x/50 for x in dhi['hourly']['shortwave_radiation']]
+    }).set_index('Data')
+    st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
+except:
+    st.warning("Dati storici momentaneamente non disponibili")
 
 if st.button("Aggiorna"):
     st.cache_data.clear()
