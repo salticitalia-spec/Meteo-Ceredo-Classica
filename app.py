@@ -58,7 +58,7 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 .temp-perceived { font-size: 16px; color: #FFA500 !important; margin-bottom: 15px; font-weight: 300; }
 .forecast-card { background-color: #050505; border: 1px solid #222; padding: 15px; border-radius: 10px; margin-bottom: 8px; }
 .hum-alert { font-size: 11px; color: #FFA500; text-transform: uppercase; margin-top: 8px; font-weight: bold; }
-.legenda-kj { font-size: 10px; color: #666; margin-bottom: 15px; border-left: 2px solid #333; padding-left: 10px; }
+.legenda-kj { font-size: 11px; color: #CCC; margin-bottom: 15px; border-left: 2px solid #333; padding-left: 10px; line-height: 1.6; }
 [data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
 </style>
 ''', unsafe_allow_html=True)
@@ -93,7 +93,7 @@ except:
 # --- HEADER ---
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
 
-# Alert
+# Alerts
 afa_warning = "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ""
 hum_warning = "⚠️ RISCHIO CONDENSA VAJO" if curr_hum > 75 else ""
 alert_text = afa_warning if afa_warning else hum_warning
@@ -116,19 +116,19 @@ st.markdown(f'''
 st_t, st_c, st_d = calcola_stato_parete(dhi)
 st.markdown(f'''
 <div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;">
-    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (KJ/mq = Asciugatura)</div>
+    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (KJ/mq = Indice Asciugatura)</div>
     <div style="font-size:22px;color:{st_c};font-weight:bold;">{st_t}</div>
     <div style="font-size:11px;color:#888;">{st_d}</div>
 </div>
 ''', unsafe_allow_html=True)
 
-# --- PREVISIONI ---
+# --- PREVISIONI CON LEGENDA CORRETTA ---
 st.subheader("Prossimi 3 Giorni")
 st.markdown(f'''
 <div class="legenda-kj">
-    <span style="color:#00FFFF;">● >{THRESHOLD_HIGH} KJ:</span> Rapida<br>
-    <span style="color:#FFFF00;">● {THRESHOLD_LOW}-{THRESHOLD_HIGH} KJ:</span> Lenta<br>
-    <span style="color:#FF3131;">● <{THRESHOLD_LOW} KJ:</span> Rischio condensa
+    <span style="color:#00FFFF;">● >{THRESHOLD_HIGH} KJ:</span> Asciugatura Rapida<br>
+    <span style="color:#FFFF00;">● {THRESHOLD_LOW}-{THRESHOLD_HIGH} KJ:</span> Asciugatura Lenta<br>
+    <span style="color:#FF3131;">● <{THRESHOLD_LOW} KJ:</span> Rischio Bagnato / Condensa
 </div>
 ''', unsafe_allow_html=True)
 
@@ -162,12 +162,4 @@ try:
         'Data': pd.to_datetime(dhi['hourly']['time']),
         'Pioggia (mm)': [x*10 for x in dhi['hourly']['precipitation']],
         'Vento (km/h)': dhi['hourly']['windspeed_10m'],
-        'Asciugatura (KJ)': [x/50 for x in dhi['hourly']['shortwave_radiation']]
-    }).set_index('Data')
-    st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
-except:
-    st.warning("Dati storici momentaneamente non disponibili")
-
-if st.button("Aggiorna"):
-    st.cache_data.clear()
-    st.rerun()
+        'Asciugatura (KJ)': [x/50 for x in dhi['hourly
