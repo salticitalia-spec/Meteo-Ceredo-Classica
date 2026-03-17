@@ -62,9 +62,9 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 .banner-title { font-size: 24px; font-weight: 300; letter-spacing: 5px; margin: 0; text-transform: uppercase; }
 .info-block { background-color: #000000; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
 .temp-main { font-size: 52px; font-weight: 200; line-height: 1.0; margin: 10px 0; }
-.temp-perceived { font-size: 16px; color: #FFA500 !important; margin-bottom: 15px; font-weight: 300; }
-.forecast-card { background-color: #050505; border: 1px solid #222; padding: 15px; border-radius: 10px; margin-bottom: 8px; }
-.hum-alert { font-size: 11px; color: #FFA500; text-transform: uppercase; margin-top: 8px; font-weight: bold; }
+.temp-perceived { font-size: 16px; color: #FFFF00 !important; margin-bottom: 15px; font-weight: 300; }
+.forecast-card { background-color: #050505; border: 1px solid #222; padding: 18px; border-radius: 10px; margin-bottom: 10px; }
+.hum-alert { font-size: 11px; color: #FFFF00; text-transform: uppercase; margin-top: 8px; font-weight: bold; }
 .legenda-kj { font-size: 11px; color: #CCC; margin-bottom: 15px; border-left: 2px solid #333; padding-left: 10px; line-height: 1.6; }
 [data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
 </style>
@@ -107,7 +107,7 @@ st.markdown(f'''
     <div class="temp-perceived">Percepita: {percepita}°</div>
     <div style="display:flex; justify-content:center; gap:25px; font-size:18px;">
         <div style="color:#00FF00!important;">💨 {curr["windspeed"]} <span style="font-size:10px;">km/h</span></div>
-        <div style="color:#FFA500!important;">💧 {c_hum}% <span style="font-size:10px;">UR</span></div>
+        <div style="color:#FFFF00!important;">💧 {c_hum}% <span style="font-size:10px;">UR</span></div>
     </div>
     <div class="hum-alert">{alert_text}</div>
 </div>
@@ -144,15 +144,15 @@ for i in range(3):
     st.markdown(f'''
     <div class="forecast-card">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:14px;font-weight:bold;">{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span>
+            <span style="font-size:19px;font-weight:bold;letter-spacing:1px;">{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span>
             <div style="text-align:right;">
-                <div style="color:#FFFFFF;font-size:16px;">Reale: {max_t}°</div>
-                <div style="color:#FFA500;font-size:13px;font-weight:300;">Percepita: {p_max}°</div>
+                <div style="color:#FFFFFF;font-size:15px;">Reale: {max_t}°</div>
+                <div style="color:#FFFF00;font-size:15px;">Percepita: {p_max}°</div>
             </div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:11px;border-top:1px solid #222;padding-top:8px;">
+        <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:11px;border-top:1px solid #222;padding-top:10px;">
             <div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFA500;">{avg_hum}%</span></div>
+            <div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFFF00;">{avg_hum}%</span></div>
             <div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>
         </div>
     </div>
