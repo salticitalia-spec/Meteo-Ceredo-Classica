@@ -32,52 +32,26 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- CSS (ANTI-WRAP & ULTRA-COMPACT HIERARCHY) ---
+# --- CSS (HEADER & CARD UNIFORMITY) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
         background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 10px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
+        padding: 15px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
         text-align: center; margin-bottom: 25px;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: flex; justify-content: center; align-items: center;
     }
-    /* Contenitore Titolo Gerarchico */
-    .title-container {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end; /* Allinea PRO a destra sotto Ceredoleso */
-        white-space: nowrap; /* Forza il testo su una sola riga */
-    }
-    /* Stile Ceredoleso (Ultra-Ridotto) */
-    .title-ceredoleso {
-        color: #0FF !important;
-        font-weight: 100 !important;
-        font-size: 12px;
-        letter-spacing: 4px;
-        margin: 0;
-        text-transform: uppercase;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-    /* Stile PRO (Sotto e Allineato) */
-    .title-pro {
-        color: #0FF !important;
-        font-weight: 300 !important; /* Leggermente più spesso per gerarchia */
-        font-size: 10px;
-        letter-spacing: 2px;
-        margin-top: -2px; /* Avvicina PRO a Ceredoleso */
-        text-transform: uppercase;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
+    .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
+    .title-ceredoleso { color: #0FF !important; font-weight: 100 !important; font-size: 10px; letter-spacing: 5px; margin: 0; text-transform: uppercase; line-height: 1; }
+    .title-pro { color: #0FF !important; font-weight: 100 !important; font-size: 8px; letter-spacing: 3px; margin-top: 2px; text-transform: uppercase; opacity: 0.8; }
     
     .info-card {
         background-color: #0c0c0c; border: 1px solid #222;
         padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
+    .date-text { font-size: 18px; font-weight: bold; color: #fff; } /* UNIFORMATO A 18PX */
     .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
     .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
@@ -94,8 +68,7 @@ def fetch_data():
     start_d = (datetime.now() - timedelta(days=11)).strftime('%Y-%m-%d')
     url_hi = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
     try:
-        fc_res = requests.get(url_fc).json()
-        hi_res = requests.get(url_hi).json()
+        fc_res = requests.get(url_fc).json(); hi_res = requests.get(url_hi).json()
         return fc_res, hi_res
     except: return None, None
 
@@ -109,22 +82,30 @@ c_rain, c_code = dfc['daily']['precipitation_sum'][0], curr.get("weathercode", 0
 percepita = calcola_percepita(c_temp, c_hum)
 data_oggi = f"{giorni_ita[now.weekday()]} {now.day} {mesi_ita[now.month-1]}"
 
-# --- HEADER (STRUTTURA GERARCHICA COMPATTA) ---
-st.markdown(f'''
-<div class="main-banner">
-    <div class="title-container">
-        <span class="title-ceredoleso">Ceredoleso</span>
-        <span class="title-pro">PRO</span>
-    </div>
-</div>
-''', unsafe_allow_html=True)
+# --- HEADER ---
+st.markdown(f'<div class="main-banner"><div class="title-wrapper"><div class="title-ceredoleso">Ceredoleso</div><div class="title-pro">PRO</div></div></div>', unsafe_allow_html=True)
 
 # --- BLOCCO OGGI ---
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
 rain_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_t}</div>' if rain_t else ""
 cond = "🔥 AFA ELEVATA" if percepita > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
 
-st.markdown(f'<div class="info-card"><div style="color:#777;font-size:16px;font-weight:bold;">{data_oggi}</div><div style="color:#0FF;font-size:11px;margin-bottom:10px;">✨ {get_santo(now)}</div><div style="font-size:50px;">{get_weather_icon(c_code)}</div><div class="t-main">{c_temp}°</div><div class="t-perc">Percepita: {percepita}°</div><div class="val-box"><div style="color:#0F0;">💨 {curr["windspeed"]}kph</div><div style="color:#FF0;">💧 {c_hum}%</div><div style="color:#0FF;">🌧️ {c_rain}mm</div></div>{rain_h}<div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond}</div></div>', unsafe_allow_html=True)
+st.markdown(f'''
+<div class="info-card">
+    <div class="date-text">{data_oggi}</div>
+    <div style="color:#0FF;font-size:11px;margin-bottom:10px;">✨ {get_santo(now)}</div>
+    <div style="font-size:50px;">{get_weather_icon(c_code)}</div>
+    <div class="t-main">{c_temp}°</div>
+    <div class="t-perc">Percepita: {percepita}°</div>
+    <div class="val-box">
+        <div style="color:#0F0;">💨 {curr["windspeed"]}kph</div>
+        <div style="color:#FF0;">💧 {c_hum}%</div>
+        <div style="color:#0FF;">🌧️ {c_rain}mm</div>
+    </div>
+    {rain_h}
+    <div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond}</div>
+</div>
+''', unsafe_allow_html=True)
 
 # --- MOSTRO BOVINO ---
 if dhi and 'hourly' in dhi and 'precipitation' in dhi['hourly']:
@@ -146,7 +127,7 @@ for i in range(1, 4):
     r_t = get_rain_start(dfc['hourly']['precipitation'], i*24)
     r_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {r_t}</div>' if r_t else ""
     dfut = f"{giorni_ita[d_obj.weekday()]} {d_obj.day} {mesi_ita[d_obj.month-1]}"
-    st.markdown(f'<div class="info-card"><div style="font-size:18px;font-weight:bold;">{dfut}</div><div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div><div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div><div class="t-main">{max_t}°</div><div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div><div class="val-box"><div style="color:#0F0;">💨 {wind_i}kph</div><div style="color:#FF0;">💧 {hum_i}%</div><div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div></div>{r_h}<div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="info-card"><div class="date-text">{dfut}</div><div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div><div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div><div class="t-main">{max_t}°</div><div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div><div class="val-box"><div style="color:#0F0;">💨 {wind_i}kph</div><div style="color:#FF0;">💧 {hum_i}%</div><div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div></div>{r_h}<div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div></div>', unsafe_allow_html=True)
 
 # --- STORICO ---
 if dhi and 'hourly' in dhi:
