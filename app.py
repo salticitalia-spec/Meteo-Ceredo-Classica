@@ -32,7 +32,7 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- 4. CSS (HEADER UNIFORMATO +20%) ---
+# --- 4. CSS (HEADER & DATE UNIFORMATE) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
@@ -45,7 +45,7 @@ st.markdown('''
     }
     .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
     
-    /* Ceredoleso uniformato (~25px) */
+    /* Stile Header Ceredoleso */
     .title-ceredoleso { 
         color: #0FF !important; 
         font-weight: 100 !important; 
@@ -57,7 +57,6 @@ st.markdown('''
         font-family: sans-serif;
     }
     
-    /* PRO uniformato (~17px) */
     .title-pro { 
         color: #0FF !important; 
         font-weight: 100 !important; 
@@ -70,11 +69,20 @@ st.markdown('''
         opacity: 0.9; 
     }
     
+    /* UNIFORMITÀ DATE (stesso font dell'Header) */
+    .date-text { 
+        font-family: sans-serif;
+        font-weight: 100 !important;
+        font-size: 22px; /* Aumentato del 20% */
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+    }
+
     .info-card {
         background-color: #0c0c0c; border: 1px solid #222;
-        padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
+        padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
-    .date-text { font-size: 18px; font-weight: bold; color: #fff; }
     .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
     .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
@@ -83,7 +91,7 @@ st.markdown('''
 </style>
 ''', unsafe_allow_html=True)
 
-# --- 5. DATA FETCHING ---
+# --- 5. FETCH DATA ---
 @st.cache_data(ttl=3600)
 def fetch_data():
     lat, lon = 45.6117, 10.9710
@@ -92,8 +100,7 @@ def fetch_data():
     start_d = (datetime.now() - timedelta(days=11)).strftime('%Y-%m-%d')
     url_hi = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
     try:
-        fc_res = requests.get(url_fc).json()
-        hi_res = requests.get(url_hi).json()
+        fc_res = requests.get(url_fc).json(); hi_res = requests.get(url_hi).json()
         return fc_res, hi_res
     except: return None, None
 
