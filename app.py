@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- PARAMETRI DI SOGLIA (CALIBRATI SU MAPPA) ---
+# --- PARAMETRI DI SOGLIA ---
 THRESHOLD_LOW = 6500   
 THRESHOLD_HIGH = 12000 
-CORR_VAJO = 0.8  # Coefficiente ombra vajo
+CORR_VAJO = 0.8 
 
 # --- FUNZIONE CALCOLO PERCEPITA (HEAT INDEX) ---
 def calcola_percepita(T, rh):
@@ -62,8 +62,100 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 </style>
 ''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI ---
+# --- RECUPERO DATI (URL SPEZZATO PER SICUREZZA) ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum&timezone=Europe%2FR
+    
+    # URL Previsioni
+    base_fc = "https://api.open-meteo.com/v1/forecast"
+    params_fc = (f"?latitude={lat}&longitude={lon}&current_weather=true"
+                 "&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation"
+                 "&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum"
+                 "&timezone=Europe%2FRome")
+    url_fc = base_fc + params_fc
+    
+    # URL Storico
+    start_d = (datetime.now() - timedelta(days=10)).date().isoformat()
+    end_d = datetime.now().date().isoformat()
+    base_hi = "https://archive-api.open-meteo.com/v1/archive"
+    params_hi = (f"?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}"
+                 "&hourly=precipitation&timezone=Europe%2FRome")
+    url_hi = base_hi + params_hi
+    
+    return requests.get(url_fc).json(), requests.get(url_hi).json()
+
+try:
+    dfc, dhi = get_weather_data()
+    curr, now = dfc['current_weather'], datetime.now()
+    curr_temp = curr["temperature"]
+    curr_hum = dfc['hourly']['relativehumidity_2m'][now.hour]
+    percepita = calcola_percepita(curr_temp, curr_hum)
+    d_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
+except:
+    st.error("Errore nel caricamento dati API"); st.stop()
+
+# --- INTERFACCIA ---
+st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
+
+afa_warning = "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ""
+hum_warning = "⚠️ RISCHIO CONDENSA VAJO" if curr_hum > 75 else ""
+alert_text = afa_warning if afa_warning else hum_warning
+
+st.markdown(f'''
+<div class="info-block">
+    <div style="font-size:14px;color:#AAA!important;">{d_str}</div>
+    <div style="font-size:10px;color:#00FFFF!important;letter-spacing:2px;margin-bottom:10px;">✨ {get_santo(now)}</div>
+    <div class="temp-main">{curr_temp}°</div>
+    <div class="temp-perceived">Percepita: {percepita}°</div>
+    <div style="display:flex; justify-content:center; gap:25px; font-size:18px;">
+        <div style="color:#00FF00!important;">💨 {curr["windspeed"]} <span style="font-size:10px;">km/h</span></div>
+        <div style="color:#FFA500!important;">💧 {curr_hum}% <span style="font-size:10px;">UR</span></div>
+    </div>
+    <div class="hum-alert">{alert_text}</div>
+</div>
+''', unsafe_allow_html=True)
+
+st_t, st_c, st_d = calcola_stato_parete(dhi)
+st.markdown(f'''
+<div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;">
+    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (Modello Bosco)</div>
+    <div style="font-size:22px;color:{st_c};font-weight:bold;">{st_t}</div>
+    <div style="font-size:11px;color:#888;">{st_d}</div>
+</div>
+''', unsafe_allow_html=True)
+
+st.subheader("Prossimi 3 Giorni")
+st.markdown(f'''
+<div class="legenda-kj">
+    <span style="color:#00FFFF;">● >{THRESHOLD_HIGH} KJ:</span> Rapida<br>
+    <span style="color:#FFFF00;">● {THRESHOLD_LOW}-{THRESHOLD_HIGH} KJ:</span> Lenta<br>
+    <span style="color:#FF3131;">● <{THRESHOLD_LOW} KJ:</span> Rischio condensa
+</div>
+''', unsafe_allow_html=True)
+
+for i in range(3):
+    d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
+    irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
+    i_cl = "irr-low" if irr_v < THRESHOLD_LOW else ("irr-high" if irr_v > THRESHOLD_HIGH else "irr-mid")
+    avg_hum = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
+    max_t = dfc['daily']['temperature_2m_max'][i]
+    perc_max = calcola_percepita(max_t, avg_hum)
+
+    st.markdown(f'''
+    <div class="forecast-card">
+        <div style="display:flex;justify-content:space-between;">
+            <span>{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span>
+            <span style="color:#FF3131;">Max {max_t}° (Perc. {perc_max}°)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
+            <div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>
+            <div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFA500;">{avg_hum}%</span></div>
+            <div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+if st.button("Aggiorna"):
+    st.cache_data.clear()
+    st.rerun()
