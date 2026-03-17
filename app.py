@@ -32,25 +32,28 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- CSS (HEADER ULTRA-SLIM & MINIMAL) ---
+# --- CSS (ANTI-WRAP & ULTRA-THIN) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
         background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 20px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
+        padding: 15px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
         text-align: center; margin-bottom: 25px;
+        overflow: hidden;
     }
-    /* Titolo Professionale Ridotto */
+    /* Titolo Ultra-Minimal con blocco del ritorno a capo */
     .banner-title { 
         color: #0FF !important; 
         font-weight: 100 !important; 
-        font-size: 16px; 
-        letter-spacing: 7px; 
+        font-size: 14px; 
+        letter-spacing: 5px; 
         margin: 0; 
         text-transform: uppercase;
         font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        white-space: nowrap; /* Forza il testo su una sola riga */
+        display: inline-block;
     }
     
     .info-card {
