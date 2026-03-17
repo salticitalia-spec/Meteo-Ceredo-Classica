@@ -28,7 +28,6 @@ mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 def calcola_stato_parete(data_hist):
     try:
         pioggia_oraria = data_hist['hourly']['precipitation']
-        # Pesi idrici storici (MODELLO BOSCO)
         recent = sum(pioggia_oraria[-72:])     
         medium = sum(pioggia_oraria[-168:-72])  
         remote = sum(pioggia_oraria[-240:-168]) 
@@ -62,11 +61,55 @@ st.markdown(f'''
     </style>
 ''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI ---
+# --- RECUPERO DATI (URL FORMATTATI PER SICUREZZA) ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,windspeed_10m_max,shortwave_radiation_sum&timezone=Europe%2FRome"
+    
+    url_fc = (
+        f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+        f"&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation"
+        f"&daily=temperature_2m_max,precipitation_sum,windspeed_10m_max,shortwave_radiation_sum"
+        f"&timezone=Europe%2FRome"
+    )
+    
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
-    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave
+    
+    url_hist = (
+        f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}"
+        f"&start_date={start_date}&end_date={end_date}"
+        f"&hourly=precipitation,windspeed_10m,shortwave_radiation"
+        f"&timezone=Europe%2FRome"
+    )
+    
+    resp_fc = requests.get(url_fc).json()
+    resp_hist = requests.get(url_hist).json()
+    return resp_fc, resp_hist
+
+try:
+    data_fc, data_hist = get_weather_data()
+    curr = data_fc['current_weather']
+    now = datetime.now()
+    data_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
+except Exception as e:
+    st.error(f"Errore API: {e}")
+    st.stop()
+
+# --- HEADER ---
+st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
+
+# --- REAL-TIME ---
+st.markdown(f'''
+    <div class="info-block">
+        <div style="font-size: 14px; font-weight: 300; color: #AAA !important;">{data_str}</div>
+        <div style="font-size: 10px; color: #00FFFF !important; text-transform: uppercase; letter-spacing: 2px;">✨ {get_santo(now)}</div>
+        <div class="temp-main">{curr['temperature']}°</div>
+        <div style="font-size: 18px; color: #00FF00 !important; font-weight: 300;">💨 {curr['windspeed']} <span style="font-size:12px;">km/h</span></div>
+    </div>
+''', unsafe_allow_html=True)
+
+# --- MOSTRO BOVINO INDEX ---
+stato_t, stato_c, stato_d = calcola_stato_parete(data_hist)
+st.markdown(f'''
+    <div style="background-
