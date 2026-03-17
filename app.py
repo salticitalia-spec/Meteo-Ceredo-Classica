@@ -38,13 +38,13 @@ def calcola_stato_parete(data_hist):
         if carico_idrico < 5:
             return "SECCO ☀️", "#00FFFF", "Ottimo ovunque, anche su Peci & Ostramandra."
         elif carico_idrico < 18:
-            return "UMIDO 💧", "#FFFF00", "Mangiafuoco e Torre OK. Peci: canne umide."
+            return "UMIDO 💧", "#FFFF00", "Mangiafuoco e Torre OK. Peci & Ostramandra: canne umide."
         else:
             return "BAGNATO ⚠️", "#FF3131", "Saturazione bosco. Peci & Ostramandra impraticabile."
     except:
         return "N.D.", "#333", "Errore sensori."
 
-# --- STILE CSS (ISOLATO PER EVITARE SYNTAX ERROR) ---
+# --- STILE CSS (ROBUSTO CONTRO SYNTAX ERROR) ---
 st.markdown(f'''
     <style>
     .stApp {{ background-color: #000000 !important; }}
@@ -85,7 +85,7 @@ except Exception as e:
     st.error("Errore Caricamento API")
     st.stop()
 
-# --- HEADER (TITOLO SETTORI) ---
+# --- HEADER (SETTORI CLASSICI) ---
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Mangiafuoco - Torre - Peci & Ostramandra</div><div class="banner-desc">Meteo Ceredo Classica Pro</div></div></div>', unsafe_allow_html=True)
 
 # --- REAL-TIME ---
