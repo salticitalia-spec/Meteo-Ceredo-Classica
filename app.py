@@ -32,28 +32,46 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- CSS (ANTI-WRAP & ULTRA-THIN) ---
+# --- CSS (ANTI-WRAP & ULTRA-COMPACT HIERARCHY) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
         background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 15px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
+        padding: 10px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
         text-align: center; margin-bottom: 25px;
         overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
-    /* Titolo Ultra-Minimal con blocco del ritorno a capo */
-    .banner-title { 
-        color: #0FF !important; 
-        font-weight: 100 !important; 
-        font-size: 14px; 
-        letter-spacing: 5px; 
-        margin: 0; 
+    /* Contenitore Titolo Gerarchico */
+    .title-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end; /* Allinea PRO a destra sotto Ceredoleso */
+        white-space: nowrap; /* Forza il testo su una sola riga */
+    }
+    /* Stile Ceredoleso (Ultra-Ridotto) */
+    .title-ceredoleso {
+        color: #0FF !important;
+        font-weight: 100 !important;
+        font-size: 12px;
+        letter-spacing: 4px;
+        margin: 0;
         text-transform: uppercase;
         font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        white-space: nowrap; /* Forza il testo su una sola riga */
-        display: inline-block;
+    }
+    /* Stile PRO (Sotto e Allineato) */
+    .title-pro {
+        color: #0FF !important;
+        font-weight: 300 !important; /* Leggermente più spesso per gerarchia */
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-top: -2px; /* Avvicina PRO a Ceredoleso */
+        text-transform: uppercase;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     
     .info-card {
@@ -91,8 +109,15 @@ c_rain, c_code = dfc['daily']['precipitation_sum'][0], curr.get("weathercode", 0
 percepita = calcola_percepita(c_temp, c_hum)
 data_oggi = f"{giorni_ita[now.weekday()]} {now.day} {mesi_ita[now.month-1]}"
 
-# --- HEADER ---
-st.markdown(f'<div class="main-banner"><h1 class="banner-title">Ceredoleso PRO</h1></div>', unsafe_allow_html=True)
+# --- HEADER (STRUTTURA GERARCHICA COMPATTA) ---
+st.markdown(f'''
+<div class="main-banner">
+    <div class="title-container">
+        <span class="title-ceredoleso">Ceredoleso</span>
+        <span class="title-pro">PRO</span>
+    </div>
+</div>
+''', unsafe_allow_html=True)
 
 # --- BLOCCO OGGI ---
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
