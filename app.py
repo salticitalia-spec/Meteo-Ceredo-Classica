@@ -32,39 +32,41 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- 4. CSS (HEADER +20% & STORICO) ---
+# --- 4. CSS (HEADER UNIFORMATO +20%) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
         background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 25px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
+        padding: 30px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
         text-align: center; margin-bottom: 25px;
         display: flex; justify-content: center; align-items: center;
     }
     .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
     
-    /* Ceredoleso aumentato del 20% (~21px) */
+    /* Ceredoleso uniformato (~25px) */
     .title-ceredoleso { 
         color: #0FF !important; 
         font-weight: 100 !important; 
-        font-size: 21px; 
-        letter-spacing: 6px; 
+        font-size: 25px; 
+        letter-spacing: 7px; 
         margin: 0; 
         text-transform: uppercase; 
         line-height: 1; 
         font-family: sans-serif;
     }
     
-    /* PRO aumentato (~14px) */
+    /* PRO uniformato (~17px) */
     .title-pro { 
         color: #0FF !important; 
         font-weight: 100 !important; 
-        font-size: 14px; 
-        letter-spacing: 4px; 
-        margin-top: 4px; 
+        font-size: 17px; 
+        letter-spacing: 5px; 
+        margin-top: 5px; 
         text-transform: uppercase; 
+        line-height: 1;
+        font-family: sans-serif;
         opacity: 0.9; 
     }
     
@@ -81,7 +83,7 @@ st.markdown('''
 </style>
 ''', unsafe_allow_html=True)
 
-# --- 5. FETCH DATA ---
+# --- 5. DATA FETCHING ---
 @st.cache_data(ttl=3600)
 def fetch_data():
     lat, lon = 45.6117, 10.9710
@@ -137,17 +139,14 @@ st.markdown(f'''
 if dhi and 'hourly' in dhi:
     p_hist = dhi['hourly']['precipitation']
     carico = (sum(p_hist[-72:]) * 1.0) + (sum(p_hist[-168:-72]) * 0.7)
-    if carico < 5: m_t, m_c, m_d = "SECCO ☀️", "#0FF", "🟢 Ottimo ovunque."
-    elif carico < 18: m_t, m_c, m_d = "UMIDO 💧", "#FF0", "🟡 Peci & Ostramandra umide."
-    else: m_t, m_c, m_d = "BAGNATO ⚠️", "#F31", "🔴 Bosco saturo."
+    m_t, m_c, m_d = ("SECCO ☀️", "#0FF", "🟢 Ottimo ovunque.") if carico < 5 else (("UMIDO 💧", "#FF0", "🟡 Peci & Ostramandra umide.") if carico < 18 else ("BAGNATO ⚠️", "#F31", "🔴 Bosco saturo."))
     st.markdown(f'<div style="border:1px solid {m_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;"><div style="font-size:10px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div><div style="font-size:24px;color:{m_c};font-weight:bold;margin:5px 0;">{m_t}</div><div style="font-size:13px;color:#999;">{m_d}</div></div>', unsafe_allow_html=True)
 
 # --- 9. PREVISIONI 3 GG ---
 st.subheader("Prossimi 3 Giorni")
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
-    max_t = dfc['daily']['temperature_2m_max'][i]
-    hum_i = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
+    max_t, hum_i = dfc['daily']['temperature_2m_max'][i], int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     cond_i = "🔥 AFA ELEVATA" if calcola_percepita(max_t, hum_i) > 30 else ("⚠️ RISCHIO CONDENSA" if hum_i > 75 else "")
     rain_ti = get_rain_start(dfc['hourly']['precipitation'], i*24)
     rain_hi = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_ti}</div>' if rain_ti else ""
@@ -168,7 +167,7 @@ for i in range(1, 4):
     </div>
     ''', unsafe_allow_html=True)
 
-# --- 10. STORICO 10 GIORNI (RIPRISTINATO) ---
+# --- 10. STORICO 10 GIORNI ---
 if dhi and 'hourly' in dhi:
     st.write("---")
     st.subheader("Storico 10 Giorni")
