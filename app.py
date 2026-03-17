@@ -30,19 +30,19 @@ def calcola_stato_parete(data_hist):
         pioggia_oraria = data_hist['hourly']['precipitation']
         
         # Integrazione pesata su 240 ore (10 giorni)
-        # Il bosco aumenta la ritenzione: alziamo i pesi medium e remote
         recent = sum(pioggia_oraria[-72:])     # 0-3gg (Peso 1.0)
-        medium = sum(pioggia_oraria[-168:-72])  # 4-7gg (Peso 0.7 - Effetto Bosco)
-        remote = sum(pioggia_oraria[-240:-168]) # 8-10gg (Peso 0.4 - Inerzia Canne)
+        medium = sum(pioggia_oraria[-168:-72])  # 4-7gg (Peso 0.7)
+        remote = sum(pioggia_oraria[-240:-168]) # 8-10gg (Peso 0.4)
         
         carico_idrico = (recent * 1.0) + (medium * 0.7) + (remote * 0.4)
         
         if carico_idrico < 5:
             return "SECCO ☀️", "#00FFFF", "Scarico idraulico completato. Canne ok."
-        elif carico_idrico < 18: # Alzata leggermente la soglia per tolleranza bosco
-            return "UMIDO 💧", "#FFFF00", "Transitorio: bosco in rilascio. Canne saponose."
+        elif carico_idrico < 18:
+            # Modificato: "canne umide" invece di "canne saponose"
+            return "UMIDO 💧", "#FFFF00", "Transitorio: bosco in rilascio. Canne umide."
         else:
-            return "BAGNATO ⚠️", "#FF3131", "Saturazione semielisse. Canne attive (50%)."
+            return "BAGNATO ⚠️", "#FF3131", "Saturazione semielisse. Canne attive (50%."
     except:
         return "N.D.", "#333", "Errore lettura sensori storici."
 
@@ -119,7 +119,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- MOSTRO BOVINO INDEX (INTEGRATO E AGGIORNATO) ---
+# --- MOSTRO BOVINO INDEX ---
 stato_t, stato_c, stato_d = calcola_stato_parete(data_hist)
 st.markdown(f"""
     <div style="background-color: #000; border: 1px solid {stato_c}; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
