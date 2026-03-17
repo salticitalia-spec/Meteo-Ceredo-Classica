@@ -8,15 +8,11 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
 # --- PARAMETRI ---
-THRESHOLD_LOW = 6500   
-THRESHOLD_HIGH = 12000 
-CORR_VAJO = 0.8 
+THRESHOLD_LOW, THRESHOLD_HIGH, CORR_VAJO = 6500, 12000, 0.8
 
 # --- FUNZIONI ---
 def get_weather_icon(code):
-    icons = {0: "☀️", 1: "☀️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️", 
-             51: "🌧️", 53: "🌧️", 55: "🌧️", 61: "🌧️", 63: "🌧️", 65: "🌧️",
-             71: "❄️", 95: "⚡"}
+    icons = {0: "☀️", 1: "☀️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️", 51: "🌧️", 53: "🌧️", 55: "🌧️", 61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 95: "⚡"}
     return icons.get(code, "☁️")
 
 def get_rain_start(hourly_data, start_index):
@@ -26,37 +22,15 @@ def get_rain_start(hourly_data, start_index):
     return None
 
 def calcola_percepita(T, rh):
-    if T < 21: return T 
+    if T < 21: return T
     return round(0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (rh * 0.094)), 1)
 
 def get_santo(data_obj):
-    santi = {"03-15": "S. Zaccaria", "03-16": "S. Eriberto", "03-17": "S. Patrizio",
-             "03-18": "S. Cirillo", "03-19": "S. Giuseppe", "03-20": "S. Claudia"}
+    santi = {"03-15": "S. Zaccaria", "03-16": "S. Eriberto", "03-17": "S. Patrizio", "03-18": "S. Cirillo", "03-19": "S. Giuseppe", "03-20": "S. Claudia", "03-21": "S. Benedetto"}
     return santi.get(data_obj.strftime("%m-%d"), "S. del Giorno")
 
-# --- CSS OTTIMIZZATO (NIENTE PIÙ BLOCCHI BIANCHI) ---
-st.markdown('''
-<style>
-    .stApp { background-color: #000000; }
-    .main-banner {
-        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("icona.png");
-        background-size: cover; background-position: center;
-        padding: 40px; border-radius: 15px; border: 1px solid #333;
-        text-align: center; margin-bottom: 20px;
-    }
-    .info-card {
-        background-color: #0c0c0c; border: 1px solid #222;
-        padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 15px;
-    }
-    .t-main { font-size: 55px; font-weight: 200; color: #fff; margin: 5px 0; }
-    .t-perc { font-size: 16px; color: #FFFF00; margin-bottom: 15px; }
-    .rain-tag { 
-        color: #FF3131; font-size: 11px; font-weight: bold; border: 1px solid #FF3131;
-        padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0;
-    }
-    .val-box { display: flex; justify-content: center; gap: 20px; font-size: 18px; margin-top: 10px; }
-</style>
-''', unsafe_allow_html=True)
+# --- CSS (STRIP WHITESPACE) ---
+st.markdown('<style>.stApp{background-color:#000;}.main-banner{background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url("icona.png");background-size:cover;background-position:center;padding:35px;border-radius:15px;border:1px solid #333;text-align:center;margin-bottom:20px;}.info-card{background-color:#0c0c0c;border:1px solid #222;padding:20px;border-radius:15px;text-align:center;margin-bottom:15px;}.t-main{font-size:55px;font-weight:200;color:#fff;margin:5px 0;}.t-perc{font-size:16px;color:#FF0;margin-bottom:10px;}.rain-tag{color:#F31;font-size:11px;font-weight:bold;border:1px solid #F31;padding:4px 10px;border-radius:5px;display:inline-block;margin:10px 0;}.val-box{display:flex;justify-content:center;gap:20px;font-size:18px;margin-top:10px;}</style>', unsafe_allow_html=True)
 
 @st.cache_data(ttl=3600)
 def fetch_data():
@@ -69,74 +43,38 @@ try:
     dfc, dhi = fetch_data()
     curr, now = dfc['current_weather'], datetime.now()
     c_temp, c_hum = curr["temperature"], dfc['hourly']['relativehumidity_2m'][now.hour]
-    c_rain = dfc['daily']['precipitation_sum'][0]
+    c_rain, c_code = dfc['daily']['precipitation_sum'][0], curr.get("weathercode", 0)
     percepita = calcola_percepita(c_temp, c_hum)
 except:
-    st.error("Connessione API fallita."); st.stop()
+    st.error("Errore API"); st.stop()
 
 # --- HEADER ---
-st.markdown('<div class="main-banner"><h1 style="color:#00FFFF; font-weight:200; letter-spacing:8px; margin:0;">CEREDOLESO PRO</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="main-banner"><h1 style="color:#0FF;font-weight:200;letter-spacing:6px;margin:0;">CEREDOLESO PRO</h1></div>', unsafe_allow_html=True)
 
 # --- BLOCCO OGGI ---
-rain_time_today = get_rain_start(dfc['hourly']['precipitation'], 0)
-rain_html = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_time_today}</div>' if rain_time_today else ""
-afa_condensa = "🔥 AFA ELEVATA" if percepita > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
+rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
+rain_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_t}</div>' if rain_t else ""
+cond = "🔥 AFA ELEVATA" if percepita > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
 
-st.markdown(f'''
-<div class="info-card">
-    <div style="color:#777; font-size:14px; text-transform:uppercase;">Oggi - {now.strftime("%d %B")}</div>
-    <div style="color:#00FFFF; font-size:11px; margin-bottom:10px;">✨ {get_santo(now)}</div>
-    <div style="font-size:50px;">{get_weather_icon(curr.get("weathercode", 0))}</div>
-    <div class="t-main">{c_temp}°</div>
-    <div class="t-perc">Percepita: {percepita}°</div>
-    <div class="val-box">
-        <div style="color:#00FF00;">💨 {curr["windspeed"]}<span style="font-size:10px;">km/h</span></div>
-        <div style="color:#FFFF00;">💧 {c_hum}%</div>
-        <div style="color:#00FFFF;">🌧️ {c_rain}mm</div>
-    </div>
-    {rain_html}
-    <div style="font-size:11px; color:#FFFF00; font-weight:bold; margin-top:10px;">{afa_condensa}</div>
-</div>
-''', unsafe_allow_html=True)
+st.markdown(f'<div class="info-card"><div style="color:#777;font-size:14px;">Oggi - {now.strftime("%d %B")}</div><div style="color:#0FF;font-size:11px;margin-bottom:10px;">✨ {get_santo(now)}</div><div style="font-size:50px;">{get_weather_icon(c_code)}</div><div class="t-main">{c_temp}°</div><div class="t-perc">Percepita: {percepita}°</div><div class="val-box"><div style="color:#0F0;">💨 {curr["windspeed"]}kph</div><div style="color:#FF0;">💧 {c_hum}%</div><div style="color:#0FF;">🌧️ {c_rain}mm</div></div>{rain_h}<div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond}</div></div>', unsafe_allow_html=True)
 
 # --- MOSTRO BOVINO ---
 p_hist = dhi['hourly']['precipitation']
 carico = (sum(p_hist[-72:]) * 1.0) + (sum(p_hist[-168:-72]) * 0.7)
-m_t, m_c = ("SECCO ☀️", "#00FFFF") if carico < 5 else (("UMIDO 💧", "#FFFF00") if carico < 18 else ("BAGNATO ⚠️", "#FF3131"))
-
-st.markdown(f'''
-<div style="border:1px solid {m_c}; padding:15px; border-radius:12px; text-align:center; margin-bottom:25px;">
-    <div style="font-size:10px; color:#666; text-transform:uppercase;">Mostro Bovino Index</div>
-    <div style="font-size:24px; color:{m_c}; font-weight:bold;">{m_t}</div>
-</div>
-''', unsafe_allow_html=True)
+m_t, m_c = ("SECCO ☀️", "#0FF") if carico < 5 else (("UMIDO 💧", "#FF0") if carico < 18 else ("BAGNATO ⚠️", "#F31"))
+st.markdown(f'<div style="border:1px solid {m_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;"><div style="font-size:10px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div><div style="font-size:24px;color:{m_c};font-weight:bold;">{m_t}</div></div>', unsafe_allow_html=True)
 
 # --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     irr = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
-    s_c, s_t = ("#FF3131", "Rischio Condensa") if irr < THRESHOLD_LOW else (("#00FFFF", "Asciugatura Rapida") if irr > THRESHOLD_HIGH else ("#FFFF00", "Asciugatura Lenta"))
-    
-    max_t = dfc['daily']['temperature_2m_max'][i]
-    hum_i = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
-    r_time = get_rain_start(dfc['hourly']['precipitation'], i*24)
-    r_html = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {r_time}</div>' if r_time else ""
+    s_c, s_t = ("#F31", "Rischio Condensa") if irr < THRESHOLD_LOW else (("#0FF", "Asciugatura Rapida") if irr > THRESHOLD_HIGH else ("#FF0", "Asciugatura Lenta"))
+    max_t, hum_i = dfc['daily']['temperature_2m_max'][i], int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
+    r_t = get_rain_start(dfc['hourly']['precipitation'], i*24)
+    r_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {r_t}</div>' if r_t else ""
+    st.markdown(f'<div class="info-card"><div style="font-size:18px;font-weight:bold;">{d_obj.strftime("%d %B")}</div><div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div><div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div><div class="t-main" style="font-size:45px;">{max_t}°</div><div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div><div class="val-box"><div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div><div style="color:#FF0;">💧 {hum_i}%</div></div>{r_h}<div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div></div>', unsafe_allow_html=True)
 
-    st.markdown(f'''
-    <div class="info-card">
-        <div style="font-size:18px; font-weight:bold;">{d_obj.strftime("%d %B")}</div>
-        <div style="color:#00FFFF; font-size:10px; margin-bottom:5px;">✨ {get_santo(d_obj)}</div>
-        <div style="font-size:40px;">{get_weather_icon(dfc['daily']['weathercode'][i])}</div>
-        <div class="t-main" style="font-size:45px;">{max_t}°</div>
-        <div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div>
-        <div class="val-box">
-            <div style="color:#00FFFF;">🌧️ {dfc['daily']['precipitation_sum'][i]}mm</div>
-            <div style="color:#FFFF00;">💧 {hum_i}%</div>
-        </div>
-        {r_html}
-        <div style="margin-top:10px; color:{s_c}; font-weight:bold; font-size:11px; text-transform:uppercase;">{s_t}</div>
-    </div>
-''', unsafe_allow_html=True)
-
-st.button("Aggiorna Dati", on_click=lambda: st.cache_data.clear())
+if st.button("Aggiorna Dati"):
+    st.cache_data.clear()
+    st.rerun()
