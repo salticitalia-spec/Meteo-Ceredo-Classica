@@ -56,32 +56,32 @@ def calcola_stato_parete(data_hist):
         else: return "BAGNATO ⚠️", "#FF3131", "Saturazione bosco. Peci & Ostramandra impraticabile."
     except: return "N.D.", "#333", "Errore calcolo."
 
-# --- STILE CSS (OTTIMIZZATO) ---
+# --- STILE CSS ---
 st.markdown('''
 <style>
     .stApp { background-color: #000000; }
     .main-banner {
-        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("app/static/ceredo_falesia_classica.jpg");
+        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 30px; border-radius: 15px; border: 1px solid #333;
-        text-align: center; margin-bottom: 20px;
+        padding: 35px; border-radius: 15px; border: 1px solid #333;
+        text-align: center; margin-bottom: 25px;
     }
     .info-block {
         background-color: #0a0a0a; border: 1px solid #222;
-        padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
+        padding: 25px; border-radius: 18px; text-align: center; margin-bottom: 20px;
     }
-    .temp-main { font-size: 50px; font-weight: 200; margin: 5px 0; color: #fff; }
-    .temp-perc { font-size: 16px; color: #FFFF00; font-weight: 300; }
+    .temp-main { font-size: 55px; font-weight: 200; margin: 10px 0; color: #ffffff; }
+    .temp-perc { font-size: 17px; color: #FFFF00; font-weight: 300; margin-bottom: 15px; }
     .rain-alert { 
         color: #FF3131; font-size: 12px; font-weight: bold; 
-        border: 1px solid #FF3131; padding: 5px; border-radius: 5px; 
-        display: inline-block; margin: 10px 0;
+        border: 1px solid #FF3131; padding: 6px; border-radius: 8px; 
+        display: inline-block; margin: 12px 0; text-transform: uppercase;
     }
-    h3 { color: #00FFFF !important; text-transform: uppercase; letter-spacing: 2px; }
+    h3 { color: #00FFFF !important; text-transform: uppercase; letter-spacing: 2px; font-weight: 300; }
 </style>
 ''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI ---
+# --- DATI ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
@@ -98,56 +98,56 @@ def get_weather_data():
 
 try:
     dfc, dhi = get_weather_data()
-    curr = dfc['current_weather']
-    now = datetime.now()
-    c_temp = curr["temperature"]
-    c_hum = dfc['hourly']['relativehumidity_2m'][now.hour]
+    curr, now = dfc['current_weather'], datetime.now()
+    c_temp, c_hum = curr["temperature"], dfc['hourly']['relativehumidity_2m'][now.hour]
     c_rain = dfc['daily']['precipitation_sum'][0]
     percepita = calcola_percepita(c_temp, c_hum)
     d_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} Marzo"
 except:
-    st.error("Dati non disponibili al momento."); st.stop()
+    st.error("Dati temporaneamente non disponibili."); st.stop()
 
-# --- INTERFACCIA ---
-st.markdown('<div class="main-banner"><h1 style="color:#00FFFF; margin:0; font-weight:300;">CEREDOLESO PRO</h1></div>', unsafe_allow_html=True)
+# --- HEADER ---
+st.markdown('<div class="main-banner"><h1 style="color:#00FFFF; margin:0; font-weight:300; letter-spacing:5px;">CEREDOLESO PRO</h1></div>', unsafe_allow_html=True)
 
-# OGGI
-icon_today = get_weather_icon(curr.get("weathercode", 0))
+# BLOCCO OGGI
 rain_now_time = get_rain_start(dfc['hourly']['precipitation'], 0)
+rain_html = f"<div class='rain-alert'>🌧️ INIZIO PIOGGIA: ORE {rain_now_time}</div>" if rain_now_time else ""
 
 st.markdown(f'''
 <div class="info-block">
-    <div style="color:#888; font-size:14px;">Oggi - {d_str}</div>
-    <div style="color:#00FFFF; font-size:11px; margin-bottom:10px;">✨ {get_santo(now)}</div>
-    <div style="font-size:45px;">{icon_today}</div>
+    <div style="color:#888; font-size:15px;">Oggi - {d_str}</div>
+    <div style="color:#00FFFF; font-size:12px; margin-bottom:12px; letter-spacing:1px;">✨ {get_santo(now)}</div>
+    <div style="font-size:50px;">{get_weather_icon(curr.get("weathercode", 0))}</div>
     <div class="temp-main">{c_temp}°</div>
     <div class="temp-perc">Percepita: {percepita}°</div>
-    <div style="display:flex; justify-content:center; gap:20px; margin-top:10px;">
-        <div style="color:#00FF00;">💨 {curr["windspeed"]}kph</div>
-        <div style="color:#FFFF00;">💧 {c_hum}%</div>
-        <div style="color:#00FFFF;">🌧️ {c_rain}mm</div>
+    <div style="display:flex; justify-content:center; gap:25px; margin-top:10px; font-size:18px;">
+        <div style="color:#00FF00;">💨 {curr["windspeed"]} <span style="font-size:10px;">km/h</span></div>
+        <div style="color:#FFFF00;">💧 {c_hum}% <span style="font-size:10px;">UR</span></div>
+        <div style="color:#00FFFF;">🌧️ {c_rain} <span style="font-size:10px;">mm</span></div>
     </div>
-    {"<div class='rain-alert'>🌧️ INIZIO PIOGGIA: " + rain_now_time + "</div>" if rain_now_time else ""}
+    {rain_html}
+    <div style="font-size:12px; color:#FFFF00; text-transform:uppercase; margin-top:12px; font-weight:bold;">
+        { "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ("⚠️ RISCHIO CONDENSA VAJO" if c_hum > 75 else "") }
+    </div>
 </div>
 ''', unsafe_allow_html=True)
 
 # MOSTRO BOVINO
 st_t, st_c, st_d = calcola_stato_parete(dhi)
 st.markdown(f'''
-<div style="border:1px solid {st_c}; padding:15px; border-radius:12px; text-align:center; margin-bottom:20px;">
-    <div style="font-size:10px; color:#666; text-transform:uppercase;">Mostro Bovino Index</div>
-    <div style="font-size:24px; color:{st_c}; font-weight:bold;">{st_t}</div>
-    <div style="font-size:12px; color:#999;">{st_d}</div>
+<div style="border:1px solid {st_c}; padding:18px; border-radius:15px; text-align:center; margin-bottom:30px; background-color: rgba(0,0,0,0.3);">
+    <div style="font-size:10px; color:#666; text-transform:uppercase; letter-spacing:1px;">Mostro Bovino Index (Stato Parete)</div>
+    <div style="font-size:26px; color:{st_c}; font-weight:bold; margin:5px 0;">{st_t}</div>
+    <div style="font-size:13px; color:#999;">{st_d}</div>
 </div>
 ''', unsafe_allow_html=True)
 
-# PREVISIONI
+# PREVISIONI 3 GIORNI
 st.subheader("Prossimi 3 Giorni")
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
     
-    # Colore Asciugatura
     if irr_v < THRESHOLD_LOW: s_c, s_t = "#FF3131", "Rischio Condensa"
     elif irr_v > THRESHOLD_HIGH: s_c, s_t = "#00FFFF", "Asciugatura Rapida"
     else: s_c, s_t = "#FFFF00", "Asciugatura Lenta"
@@ -155,21 +155,22 @@ for i in range(1, 4):
     max_t = dfc['daily']['temperature_2m_max'][i]
     hum_i = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     p_max = calcola_percepita(max_t, hum_i)
-    rain_i = get_rain_start(dfc['hourly']['precipitation'], i*24)
+    rain_i_time = get_rain_start(dfc['hourly']['precipitation'], i*24)
+    rain_i_html = f"<div class='rain-alert'>🌧️ INIZIO PIOGGIA: ORE {rain_i_time}</div>" if rain_i_time else ""
 
     st.markdown(f'''
-    <div class="info-block">
-        <div style="font-size:18px; font-weight:bold;">{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</div>
-        <div style="color:#00FFFF; font-size:10px; margin-bottom:5px;">✨ {get_santo(d_obj)}</div>
-        <div style="font-size:35px;">{get_weather_icon(dfc['daily']['weathercode'][i])}</div>
-        <div class="temp-main" style="font-size:40px;">{max_t}°</div>
+    <div class="info-block" style="border: 1px solid #222;">
+        <div style="font-size:20px; font-weight:bold;">{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</div>
+        <div style="color:#00FFFF; font-size:11px; margin-bottom:8px;">✨ {get_santo(d_obj)}</div>
+        <div style="font-size:40px;">{get_weather_icon(dfc['daily']['weathercode'][i])}</div>
+        <div class="temp-main" style="font-size:48px;">{max_t}°</div>
         <div class="temp-perc">Percepita: {p_max}°</div>
-        <div style="display:flex; justify-content:center; gap:25px; margin-top:10px;">
+        <div style="display:flex; justify-content:center; gap:30px; margin-top:10px; font-size:17px;">
             <div style="color:#00FFFF;">🌧️ {dfc['daily']['precipitation_sum'][i]}mm</div>
-            <div style="color:#FFFF00;">💧 {hum_i}%</div>
+            <div style="color:#FFFF00;">💧 {hum_i}% UR</div>
         </div>
-        {"<div class='rain-alert'>🌧️ INIZIO PIOGGIA: " + rain_i + "</div>" if rain_i else ""}
-        <div style="margin-top:10px; color:{s_c}; font-weight:bold; font-size:11px; text-transform:uppercase;">{s_t}</div>
+        {rain_i_html}
+        <div style="margin-top:12px; color:{s_c}; font-weight:bold; font-size:12px; text-transform:uppercase;">{s_t}</div>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -184,8 +185,8 @@ try:
         'Asciugatura': [x/50 for x in h['shortwave_radiation']]
     }, index=pd.to_datetime(h['time']))
     st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
-except: st.warning("Dati storici non pronti.")
+except: st.warning("Grafico non disponibile.")
 
-if st.button("Aggiorna Dati"):
+if st.button("🔄 Aggiorna Meteo"):
     st.cache_data.clear()
     st.rerun()
