@@ -7,14 +7,13 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- PARAMETRI DI SOGLIA (CALIBRATI SU MAPPA) ---
+# --- PARAMETRI DI SOGLIA ---
 THRESHOLD_LOW = 6500   
 THRESHOLD_HIGH = 12000 
-CORR_VAJO = 0.8  # Correzione esposizione Vajo Marciora
+CORR_VAJO = 0.8 
 
 # --- FUNZIONE CALCOLO PERCEPITA (HEAT INDEX) ---
 def calcola_percepita(T, rh):
-    """Calcola la temperatura percepita (Heat Index) se T > 21°C"""
     if T < 21:
         return T 
     hi = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (rh * 0.094))
@@ -40,12 +39,10 @@ def calcola_stato_parete(data_hist):
     try:
         h = data_hist['hourly']
         p = h['precipitation']
-        # Carico idrico pesato (ultimi 10gg)
         recent = sum(p[-72:])     
         medium = sum(p[-168:-72])  
         remote = sum(p[-240:-168]) 
         carico = (recent * 1.0) + (medium * 0.7) + (remote * 0.4)
-        
         if carico < 5:
             return "SECCO ☀️", "#00FFFF", "Ottimo ovunque, anche su Peci & Ostramandra."
         elif carico < 18:
@@ -73,24 +70,19 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 </style>
 ''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI ---
+# --- DATI ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    
-    # URL Previsioni
     url_fc = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
               "&current_weather=true&hourly=temperature_2m,relativehumidity_2m,"
               "precipitation,shortwave_radiation&daily=temperature_2m_max,"
               "precipitation_sum,shortwave_radiation_sum&timezone=Europe%2FRome")
-    
-    # URL Storico
     s_date = (datetime.now() - timedelta(days=10)).date().isoformat()
     e_date = datetime.now().date().isoformat()
     url_hi = (f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}"
               f"&start_date={s_date}&end_date={e_date}&hourly=precipitation,"
               "windspeed_10m,shortwave_radiation&timezone=Europe%2FRome")
-    
     return requests.get(url_fc).json(), requests.get(url_hi).json()
 
 try:
@@ -105,7 +97,6 @@ except:
 # --- HEADER ---
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
 
-# Alert Logica
 alert_text = "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ("⚠️ RISCHIO CONDENSA VAJO" if c_hum > 75 else "")
 
 st.markdown(f'''
@@ -122,7 +113,7 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# --- MOSTR BOVINO INDEX (SETTORI) ---
+# --- MOSTR BOVINO INDEX ---
 st_t, st_c, st_d = calcola_stato_parete(dhi)
 st.markdown(f'''
 <div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;">
@@ -152,11 +143,14 @@ for i in range(3):
     
     st.markdown(f'''
     <div class="forecast-card">
-        <div style="display:flex;justify-content:space-between;">
-            <span>{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span>
-            <span style="color:#FF3131;">Max {max_t}° (Perc. {p_max}°)</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:14px;font-weight:bold;">{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span>
+            <div style="text-align:right;">
+                <div style="color:#FFFFFF;font-size:16px;">Reale: {max_t}°</div>
+                <div style="color:#FFA500;font-size:13px;font-weight:300;">Percepita: {p_max}°</div>
+            </div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:11px;border-top:1px solid #222;padding-top:8px;">
             <div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>
             <div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFA500;">{avg_hum}%</span></div>
             <div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>
