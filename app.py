@@ -39,59 +39,50 @@ st.markdown('''
     .main-banner {
         background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 25px; border-radius: 15px; border: 1px solid #333;
+        padding: 20px; border-radius: 15px; border: 1px solid #333;
         text-align: center; margin-bottom: 20px;
     }
     .info-card {
         background-color: #0c0c0c; border: 1px solid #222;
         padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
-    .banner-title { color: #0FF; font-weight: 300; font-size: 22px; letter-spacing: 2px; margin: 0; text-transform: uppercase; }
+    /* Titolo Ciano e Piccolo */
+    .banner-title { color: #0FF !important; font-weight: 400; font-size: 18px; letter-spacing: 1.5px; margin: 0; text-transform: uppercase; }
+    
     .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
     .t-perc { font-size: 16px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
     .val-box { display: flex; justify-content: center; gap: 15px; font-size: 17px; margin-top: 10px; }
     [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color:#020202; }
-    .sector-icon { font-size: 1.2em; vertical-align: middle; margin-right: 5px; }
+    .sector-icon { font-size: 1.1em; vertical-align: middle; margin-right: 5px; }
 </style>
 ''', unsafe_allow_html=True)
 
 @st.cache_data(ttl=3600)
 def fetch_data():
     lat, lon = 45.6117, 10.9710
-    # Previsioni
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation,weathercode,windspeed_10m&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum,weathercode,windspeed_10m_max&timezone=Europe%2FRome"
-    
-    # Archivio (fino a ieri per stabilità)
     end_d = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     start_d = (datetime.now() - timedelta(days=11)).strftime('%Y-%m-%d')
     url_hi = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
-    
     try:
         fc_res = requests.get(url_fc).json()
         hi_res = requests.get(url_hi).json()
         return fc_res, hi_res
-    except:
-        return None, None
+    except: return None, None
 
 dfc, dhi = fetch_data()
-
 if dfc is None or 'current_weather' not in dfc:
-    st.error("Errore nel caricamento dei dati meteo. Riprova tra poco.")
-    st.stop()
+    st.error("Errore API"); st.stop()
 
-# --- DATI ATTUALI ---
-curr = dfc['current_weather']
-now = datetime.now()
-c_temp = curr["temperature"]
-c_hum = dfc['hourly']['relativehumidity_2m'][now.hour]
-c_rain = dfc['daily']['precipitation_sum'][0]
-c_code = curr.get("weathercode", 0)
+curr, now = dfc['current_weather'], datetime.now()
+c_temp, c_hum = curr["temperature"], dfc['hourly']['relativehumidity_2m'][now.hour]
+c_rain, c_code = dfc['daily']['precipitation_sum'][0], curr.get("weathercode", 0)
 percepita = calcola_percepita(c_temp, c_hum)
 data_oggi = f"{giorni_ita[now.weekday()]} {now.day} {mesi_ita[now.month-1]}"
 
 # --- HEADER ---
-st.markdown(f'<div class="main-banner"><h1 class="banner-title">CEREDOLESO PRO</h1></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="main-banner"><h1 class="banner-title">Ceredoleso PRO</h1></div>', unsafe_allow_html=True)
 
 # --- BLOCCO OGGI ---
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
@@ -100,43 +91,32 @@ cond = "🔥 AFA ELEVATA" if percepita > 30 else ("⚠️ RISCHIO CONDENSA" if c
 
 st.markdown(f'<div class="info-card"><div style="color:#777;font-size:16px;font-weight:bold;">{data_oggi}</div><div style="color:#0FF;font-size:11px;margin-bottom:10px;">✨ {get_santo(now)}</div><div style="font-size:50px;">{get_weather_icon(c_code)}</div><div class="t-main">{c_temp}°</div><div class="t-perc">Percepita: {percepita}°</div><div class="val-box"><div style="color:#0F0;">💨 {curr["windspeed"]}kph</div><div style="color:#FF0;">💧 {c_hum}%</div><div style="color:#0FF;">🌧️ {c_rain}mm</div></div>{rain_h}<div style="font-size:11px;color:#FF0;font-weight:bold;margin-top:10px;">{cond}</div></div>', unsafe_allow_html=True)
 
-# --- MOSTRO BOVINO (CON PROTEZIONE KEYERROR) ---
+# --- MOSTRO BOVINO ---
 if dhi and 'hourly' in dhi and 'precipitation' in dhi['hourly']:
     p_hist = dhi['hourly']['precipitation']
     carico = (sum(p_hist[-72:]) * 1.0) + (sum(p_hist[-168:-72]) * 0.7)
-    
-    if carico < 5:
-        m_t, m_c, m_d = "SECCO ☀️", "#0FF", "🟢 Ottimo ovunque, anche su Peci & Ostramandra."
-    elif carico < 18:
-        m_t, m_c, m_d = "UMIDO 💧", "#FF0", "🟡 Mangiafuoco e Torre OK. Peci & Ostramandra: canne umide."
-    else:
-        m_t, m_c, m_d = "BAGNATO ⚠️", "#F31", "🔴 Saturazione bosco. Peci & Ostramandra impraticabile."
-    
+    if carico < 5: m_t, m_c, m_d = "SECCO ☀️", "#0FF", "🟢 Ottimo ovunque, anche su Peci & Ostramandra."
+    elif carico < 18: m_t, m_c, m_d = "UMIDO 💧", "#FF0", "🟡 Mangiafuoco e Torre OK. Peci & Ostramandra: canne umide."
+    else: m_t, m_c, m_d = "BAGNATO ⚠️", "#F31", "🔴 Saturazione bosco. Peci & Ostramandra impraticabile."
     st.markdown(f'<div style="border:1px solid {m_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;"><div style="font-size:10px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div><div style="font-size:24px;color:{m_c};font-weight:bold;margin:5px 0;">{m_t}</div><div style="font-size:13px;color:#999;">{m_d}</div></div>', unsafe_allow_html=True)
-else:
-    st.warning("Dati storici per l'indice di asciugatura non disponibili.")
 
-# --- PREVISIONI 3 GIORNI ---
+# --- PREVISIONI ---
 st.subheader("Prossimi 3 Giorni")
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     irr = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
     s_c, s_t = ("#F31", "Rischio Condensa") if irr < THRESHOLD_LOW else (("#0FF", "Asciugatura Rapida") if irr > THRESHOLD_HIGH else ("#FF0", "Asciugatura Lenta"))
-    
     max_t, hum_i = dfc['daily']['temperature_2m_max'][i], int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     wind_i = dfc['daily']['windspeed_10m_max'][i]
     r_t = get_rain_start(dfc['hourly']['precipitation'], i*24)
     r_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {r_t}</div>' if r_t else ""
-    data_futura = f"{giorni_ita[d_obj.weekday()]} {d_obj.day} {mesi_ita[d_obj.month-1]}"
-
-    st.markdown(f'<div class="info-card"><div style="font-size:18px;font-weight:bold;">{data_futura}</div><div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div><div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div><div class="t-main">{max_t}°</div><div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div><div class="val-box"><div style="color:#0F0;">💨 {wind_i}kph</div><div style="color:#FF0;">💧 {hum_i}%</div><div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div></div>{r_h}<div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div></div>', unsafe_allow_html=True)
+    dfut = f"{giorni_ita[d_obj.weekday()]} {d_obj.day} {mesi_ita[d_obj.month-1]}"
+    st.markdown(f'<div class="info-card"><div style="font-size:18px;font-weight:bold;">{dfut}</div><div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div><div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div><div class="t-main">{max_t}°</div><div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div><div class="val-box"><div style="color:#0F0;">💨 {wind_i}kph</div><div style="color:#FF0;">💧 {hum_i}%</div><div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div></div>{r_h}<div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div></div>', unsafe_allow_html=True)
 
 # --- STORICO ---
 if dhi and 'hourly' in dhi:
-    st.write("---")
-    st.subheader("Storico 10 Giorni")
-    h = dhi['hourly']
-    df_h = pd.DataFrame({'Pioggia (mmx10)': [x*10 for x in h['precipitation']], 'Vento (kph)': h['windspeed_10m'], 'Asciugatura': [x/50 for x in h['shortwave_radiation']]}, index=pd.to_datetime(h['time']))
+    st.write("---"); st.subheader("Storico 10 Giorni")
+    df_h = pd.DataFrame({'Pioggia (mmx10)': [x*10 for x in dhi['hourly']['precipitation']], 'Vento (kph)': dhi['hourly']['windspeed_10m'], 'Asciugatura': [x/50 for x in dhi['hourly']['shortwave_radiation']]}, index=pd.to_datetime(dhi['hourly']['time']))
     st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
 
 if st.button("Aggiorna Dati"):
