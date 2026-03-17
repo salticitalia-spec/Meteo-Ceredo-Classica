@@ -60,10 +60,9 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 .main-banner { background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%); padding: 1px; border-radius: 10px; margin-bottom: 25px; }
 .banner-content { background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }
 .banner-title { font-size: 24px; font-weight: 300; letter-spacing: 5px; margin: 0; text-transform: uppercase; }
-.info-block { background-color: #000000; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+.info-block { background-color: #000000; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 15px; }
 .temp-main { font-size: 52px; font-weight: 200; line-height: 1.0; margin: 10px 0; }
 .temp-perceived { font-size: 16px; color: #FFFF00 !important; margin-bottom: 15px; font-weight: 300; }
-.forecast-card { background-color: #050505; border: 1px solid #222; padding: 18px; border-radius: 10px; margin-bottom: 10px; }
 .hum-alert { font-size: 11px; color: #FFFF00; text-transform: uppercase; margin-top: 8px; font-weight: bold; }
 .legenda-kj { font-size: 11px; color: #CCC; margin-bottom: 15px; border-left: 2px solid #333; padding-left: 10px; line-height: 1.6; }
 [data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
@@ -97,11 +96,12 @@ except:
 # --- HEADER ---
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
 
+# Blocco Tempo Reale (Oggi)
 alert_text = "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ("⚠️ RISCHIO CONDENSA VAJO" if c_hum > 75 else "")
 
 st.markdown(f'''
 <div class="info-block">
-    <div style="font-size:14px;color:#AAA!important;">{d_str}</div>
+    <div style="font-size:14px;color:#AAA!important;">Oggi - {d_str}</div>
     <div style="font-size:10px;color:#00FFFF!important;letter-spacing:2px;margin-bottom:10px;">✨ {get_santo(now)}</div>
     <div class="temp-main">{c_temp}°</div>
     <div class="temp-perceived">Percepita: {percepita}°</div>
@@ -117,43 +117,44 @@ st.markdown(f'''
 st_t, st_c, st_d = calcola_stato_parete(dhi)
 st.markdown(f'''
 <div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;">
-    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (KJ/mq = Indice Asciugatura)</div>
+    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index (Stato Parete)</div>
     <div style="font-size:22px;color:{st_c};font-weight:bold;">{st_t}</div>
     <div style="font-size:11px;color:#888;">{st_d}</div>
 </div>
 ''', unsafe_allow_html=True)
 
-# --- PREVISIONI ---
+# --- PREVISIONI 3 GIORNI ---
 st.subheader("Prossimi 3 Giorni")
-st.markdown(f'''
-<div class="legenda-kj">
-    <span style="color:#00FFFF;">● >{THRESHOLD_HIGH} KJ:</span> Asciugatura Rapida<br>
-    <span style="color:#FFFF00;">● {THRESHOLD_LOW}-{THRESHOLD_HIGH} KJ:</span> Asciugatura Lenta<br>
-    <span style="color:#FF3131;">● <{THRESHOLD_LOW} KJ:</span> Rischio Bagnato / Condensa
-</div>
-''', unsafe_allow_html=True)
-
-for i in range(3):
+for i in range(1, 4): # Inizia da domani
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
-    i_cl = "irr-low" if irr_v < THRESHOLD_LOW else ("irr-high" if irr_v > THRESHOLD_HIGH else "irr-mid")
+    
+    # Logica colori asciugatura (solo colori, no numeri)
+    if irr_v < THRESHOLD_LOW:
+        status_color, status_text = "#FF3131", "Rischio Condensa"
+    elif irr_v > THRESHOLD_HIGH:
+        status_color, status_text = "#00FFFF", "Asciugatura Rapida"
+    else:
+        status_color, status_text = "#FFFF00", "Asciugatura Lenta"
+        
     avg_hum = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     max_t = dfc['daily']['temperature_2m_max'][i]
     p_max = calcola_percepita(max_t, avg_hum)
+    d_nome = giorni_ita.get(d_obj.strftime('%A'))
+    d_data = d_obj.strftime('%d %B').replace("March", "Marzo").replace("April", "Aprile")
     
     st.markdown(f'''
-    <div class="forecast-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:19px;font-weight:bold;letter-spacing:1px;">{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span>
-            <div style="text-align:right;">
-                <div style="color:#FFFFFF;font-size:15px;">Reale: {max_t}°</div>
-                <div style="color:#FFFF00;font-size:15px;">Percepita: {p_max}°</div>
-            </div>
+    <div class="info-block" style="border: 1px solid #222;">
+        <div style="font-size:18px; font-weight:bold; letter-spacing:1px;">{d_nome} {d_obj.strftime('%d')}</div>
+        <div style="font-size:10px; color:#00FFFF!important; letter-spacing:2px; margin-bottom:10px;">✨ {get_santo(d_obj)}</div>
+        <div class="temp-main" style="font-size:42px;">{max_t}°</div>
+        <div class="temp-perceived" style="font-size:15px;">Percepita: {p_max}°</div>
+        <div style="display:flex; justify-content:center; gap:30px; font-size:16px;">
+            <div style="color:#00FFFF!important;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div>
+            <div style="color:#FFFF00!important;">💧 {avg_hum}% UR</div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:11px;border-top:1px solid #222;padding-top:10px;">
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFFF00;">{avg_hum}%</span></div>
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>
+        <div style="margin-top:10px; font-size:11px; font-weight:bold; color:{status_color}; text-transform:uppercase;">
+            {status_text}
         </div>
     </div>
     ''', unsafe_allow_html=True)
