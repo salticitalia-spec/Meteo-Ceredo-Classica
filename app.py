@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Meteo Ceredoleso Pro", page_icon="🧗", layout="centered")
 
-# --- PARAMETRI DI SOGLIA ---
+# --- PARAMETRI DI SOGLIA (CALIBRATI SU MAPPA) ---
 THRESHOLD_LOW = 6500   
 THRESHOLD_HIGH = 12000 
+CORR_VAJO = 0.8  # Coefficiente ombra vajo
 
 # --- FUNZIONE CALCOLO PERCEPITA (HEAT INDEX) ---
 def calcola_percepita(T, rh):
@@ -61,46 +62,8 @@ h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', 
 </style>
 ''', unsafe_allow_html=True)
 
-# --- DATI ---
+# --- RECUPERO DATI ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum&timezone=Europe%2FRome"
-    url_hi = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={(datetime.now()-timedelta(days=10)).date().isoformat()}&end_date={datetime.now().date().isoformat()}&hourly=precipitation&timezone=Europe%2FRome"
-    return requests.get(url_fc).json(), requests.get(url_hi).json()
-
-try:
-    dfc, dhi = get_weather_data()
-    curr, now = dfc['current_weather'], datetime.now()
-    curr_temp = curr["temperature"]
-    curr_hum = dfc['hourly']['relativehumidity_2m'][now.hour]
-    percepita = calcola_percepita(curr_temp, curr_hum)
-    d_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
-except:
-    st.error("Errore API"); st.stop()
-
-# --- INTERFACCIA ---
-st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
-
-# Alert combinati
-afa_warning = "🔥 AFA ELEVATA - GRIP SCARSO" if percepita > 30 else ""
-hum_warning = "⚠️ RISCHIO CONDENSA VAJO" if curr_hum > 75 else ""
-
-st.markdown(f'''
-    <div class="info-block">
-        <div style="font-size:14px;color:#AAA!important;">{d_str}</div>
-        <div style="font-size:10px;color:#00FFFF!important;letter-spacing:2px;margin-bottom:10px;">✨ {get_santo(now)}</div>
-        <div class="temp-main">{curr_temp}°</div>
-        <div class="temp-perceived">Percepita: {percepita}°</div>
-        <div style="display:flex; justify-content:center; gap:25px; font-size:18px;">
-            <div style="color:#00FF00!important;">💨 {curr["windspeed"]} <span style="font-size:10px;">km/h</span></div>
-            <div style="color:#FFA500!important;">💧 {curr_hum}% <span style="font-size:10px;">UR</span></div>
-        </div>
-        <div class="hum-alert">{afa_warning if afa_warning else hum_warning}</div>
-    </div>
-''', unsafe_allow_html=True)
-
-# --- MOSTRO BOVINO INDEX CON SETTORI ---
-st_t, st_c, st_d = calcola_stato_parete(dhi)
-st.markdown(f'''
-    <div style="border:1px
+    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum&timezone=Europe%2FR
