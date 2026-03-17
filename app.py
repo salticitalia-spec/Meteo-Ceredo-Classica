@@ -62,7 +62,7 @@ st.markdown(f'''
     </style>
     ''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI ---
+# --- RECUPERO DATI (FIX SINTASSI) ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
@@ -70,4 +70,25 @@ def get_weather_data():
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
-    return requests.get(url
+    
+    resp_fc = requests.get(url_fc).json()
+    resp_hist = requests.get(url_hist).json()
+    return resp_fc, resp_hist
+
+try:
+    data_fc, data_hist = get_weather_data()
+    curr = data_fc['current_weather']
+    now = datetime.now()
+    data_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
+except Exception as e:
+    st.error("Errore Caricamento API")
+    st.stop()
+
+# --- HEADER ---
+st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
+
+# --- REAL-TIME ---
+st.markdown(f"""
+    <div class="info-block">
+        <div style="font-size: 14px; font-weight: 300; color: #AAA !important;">{data_str}</div>
+        <div style="font-size: 10px; color: #00FFFF !important; text-transform: uppercase; letter-spacing
