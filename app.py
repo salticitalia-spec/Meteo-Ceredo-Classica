@@ -13,9 +13,8 @@ THRESHOLD_HIGH = 12000
 
 # --- FUNZIONE CALCOLO PERCEPITA (HEAT INDEX) ---
 def calcola_percepita(T, rh):
-    # Formula semplificata per Heat Index (valida sopra i 21°C)
     if T < 21:
-        return T # Sotto i 21° l'umidità non aumenta drasticamente la percezione di calore
+        return T 
     hi = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (rh * 0.094))
     return round(hi, 1)
 
@@ -35,10 +34,15 @@ def calcola_stato_parete(data_hist):
         medium = sum(pioggia_oraria[-168:-72])  
         remote = sum(pioggia_oraria[-240:-168]) 
         carico_idrico = (recent * 1.0) + (medium * 0.7) + (remote * 0.4)
-        if carico_idrico < 5: return "SECCO ☀️", "#00FFFF", "Ottimo ovunque."
-        elif carico_idrico < 18: return "UMIDO 💧", "#FFFF00", "Mangiafuoco OK. Canne umide."
-        else: return "BAGNATO ⚠️", "#FF3131", "Saturazione bosco."
-    except: return "N.D.", "#333", "Errore sensori."
+        
+        if carico_idrico < 5:
+            return "SECCO ☀️", "#00FFFF", "Ottimo ovunque, anche su Peci & Ostramandra."
+        elif carico_idrico < 18:
+            return "UMIDO 💧", "#FFFF00", "Mangiafuoco e Torre OK. Peci & Ostramandra: canne umide."
+        else:
+            return "BAGNATO ⚠️", "#FF3131", "Saturazione bosco. Peci & Ostramandra impraticabile."
+    except:
+        return "N.D.", "#333", "Errore sensori."
 
 # --- STILE CSS ---
 st.markdown('''
@@ -96,31 +100,7 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
+# --- MOSTRO BOVINO INDEX CON SETTORI ---
 st_t, st_c, st_d = calcola_stato_parete(dhi)
-st.markdown(f'<div style="border:1px solid {st_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:30px;"><div style="font-size:9px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div><div style="font-size:22px;color:{st_c};font-weight:bold;">{st_t}</div><div style="font-size:11px;color:#888;">{st_d}</div></div>', unsafe_allow_html=True)
-
-st.subheader("Prossimi 3 Giorni")
-st.markdown(f'<div class="legenda-kj"><span style="color:#00FFFF;">● >{THRESHOLD_HIGH} KJ:</span> Rapida<br><span style="color:#FFFF00;">● {THRESHOLD_LOW}-{THRESHOLD_HIGH} KJ:</span> Lenta<br><span style="color:#FF3131;">● <{THRESHOLD_LOW} KJ:</span> Rischio condensa</div>', unsafe_allow_html=True)
-
-CORR_VAJO = 0.8
-for i in range(3):
-    d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
-    irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000 * CORR_VAJO)
-    i_cl = "irr-low" if irr_v < THRESHOLD_LOW else ("irr-high" if irr_v > THRESHOLD_HIGH else "irr-mid")
-    avg_hum = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
-    max_t = dfc['daily']['temperature_2m_max'][i]
-    perc_max = calcola_percepita(max_t, avg_hum)
-
-    st.markdown(f'''
-    <div class="forecast-card">
-        <div style="display:flex;justify-content:space-between;"><span>{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}</span><span style="color:#FF3131;">Max {max_t}° (Perc. {perc_max}°)</span></div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFA500;">{avg_hum}%</span></div>
-            <div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>
-        </div>
-    </div>
-    ''', unsafe_allow_html=True)
-
-if st.button("Aggiorna"):
-    st.cache_data.clear(); st.rerun()
+st.markdown(f'''
+    <div style="border:1px
