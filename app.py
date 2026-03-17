@@ -32,7 +32,7 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- CSS (HEADER & CARD UNIFORMITY) ---
+# --- CSS (HEADER AGGIORNATO +20% & CARD UNIFORMITY) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
@@ -44,14 +44,36 @@ st.markdown('''
         display: flex; justify-content: center; align-items: center;
     }
     .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
-    .title-ceredoleso { color: #0FF !important; font-weight: 100 !important; font-size: 10px; letter-spacing: 5px; margin: 0; text-transform: uppercase; line-height: 1; }
-    .title-pro { color: #0FF !important; font-weight: 100 !important; font-size: 8px; letter-spacing: 3px; margin-top: 2px; text-transform: uppercase; opacity: 0.8; }
+    
+    /* Ceredoleso aumentato del 20% (da 10px a 12px) */
+    .title-ceredoleso { 
+        color: #0FF !important; 
+        font-weight: 100 !important; 
+        font-size: 12px; 
+        letter-spacing: 5px; 
+        margin: 0; 
+        text-transform: uppercase; 
+        line-height: 1; 
+        font-family: sans-serif;
+    }
+    
+    /* PRO allineato sotto */
+    .title-pro { 
+        color: #0FF !important; 
+        font-weight: 100 !important; 
+        font-size: 9px; 
+        letter-spacing: 3px; 
+        margin-top: 2px; 
+        text-transform: uppercase; 
+        opacity: 0.8; 
+        font-family: sans-serif;
+    }
     
     .info-card {
         background-color: #0c0c0c; border: 1px solid #222;
         padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
-    .date-text { font-size: 18px; font-weight: bold; color: #fff; } /* UNIFORMATO A 18PX */
+    .date-text { font-size: 18px; font-weight: bold; color: #fff; }
     .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
     .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
@@ -83,7 +105,14 @@ percepita = calcola_percepita(c_temp, c_hum)
 data_oggi = f"{giorni_ita[now.weekday()]} {now.day} {mesi_ita[now.month-1]}"
 
 # --- HEADER ---
-st.markdown(f'<div class="main-banner"><div class="title-wrapper"><div class="title-ceredoleso">Ceredoleso</div><div class="title-pro">PRO</div></div></div>', unsafe_allow_html=True)
+st.markdown(f'''
+<div class="main-banner">
+    <div class="title-wrapper">
+        <div class="title-ceredoleso">Ceredoleso</div>
+        <div class="title-pro">PRO</div>
+    </div>
+</div>
+''', unsafe_allow_html=True)
 
 # --- BLOCCO OGGI ---
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
