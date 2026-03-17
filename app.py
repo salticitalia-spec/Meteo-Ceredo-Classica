@@ -29,14 +29,18 @@ def get_santo(data_obj):
     santi = {"03-15": "S. Zaccaria", "03-16": "S. Eriberto", "03-17": "S. Patrizio", "03-18": "S. Cirillo", "03-19": "S. Giuseppe", "03-20": "S. Claudia", "03-21": "S. Benedetto"}
     return santi.get(data_obj.strftime("%m-%d"), "S. del Giorno")
 
-# --- CSS (STRIP WHITESPACE) ---
-st.markdown('<style>.stApp{background-color:#000;}.main-banner{background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url("icona.png");background-size:cover;background-position:center;padding:35px;border-radius:15px;border:1px solid #333;text-align:center;margin-bottom:20px;}.info-card{background-color:#0c0c0c;border:1px solid #222;padding:20px;border-radius:15px;text-align:center;margin-bottom:15px;}.t-main{font-size:55px;font-weight:200;color:#fff;margin:5px 0;}.t-perc{font-size:16px;color:#FF0;margin-bottom:10px;}.rain-tag{color:#F31;font-size:11px;font-weight:bold;border:1px solid #F31;padding:4px 10px;border-radius:5px;display:inline-block;margin:10px 0;}.val-box{display:flex;justify-content:center;gap:20px;font-size:18px;margin-top:10px;}</style>', unsafe_allow_html=True)
+# --- CSS (ANTI-BLOCCHI BIANCHI) ---
+st.markdown('<style>.stApp{background-color:#000;}.main-banner{background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url("icona.png");background-size:cover;background-position:center;padding:35px;border-radius:15px;border:1px solid #333;text-align:center;margin-bottom:20px;}.info-card{background-color:#0c0c0c;border:1px solid #222;padding:20px;border-radius:15px;text-align:center;margin-bottom:15px;}.t-main{font-size:55px;font-weight:200;color:#fff;margin:5px 0;}.t-perc{font-size:16px;color:#FF0;margin-bottom:10px;}.rain-tag{color:#F31;font-size:11px;font-weight:bold;border:1px solid #F31;padding:4px 10px;border-radius:5px;display:inline-block;margin:10px 0;}.val-box{display:flex;justify-content:center;gap:20px;font-size:18px;margin-top:10px;}[data-testid="stChart"]{border:1px solid #222;border-radius:10px;padding:10px;background-color:#020202;}</style>', unsafe_allow_html=True)
 
 @st.cache_data(ttl=3600)
 def fetch_data():
     lat, lon = 45.6117, 10.9710
+    # Forecast data
     fc = requests.get(f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation,weathercode&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum,weathercode&timezone=Europe%2FRome").json()
-    hi = requests.get(f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={(datetime.now()-timedelta(days=10)).date()}&end_date={datetime.now().date()}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome").json()
+    # History data (last 10 days)
+    start_date = (datetime.now() - timedelta(days=10)).date()
+    end_date = datetime.now().date()
+    hi = requests.get(f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome").json()
     return fc, hi
 
 try:
@@ -46,9 +50,9 @@ try:
     c_rain, c_code = dfc['daily']['precipitation_sum'][0], curr.get("weathercode", 0)
     percepita = calcola_percepita(c_temp, c_hum)
 except:
-    st.error("Errore API"); st.stop()
+    st.error("Errore nel caricamento dei dati API."); st.stop()
 
-# --- HEADER ---
+# --- INTERFACCIA ---
 st.markdown('<div class="main-banner"><h1 style="color:#0FF;font-weight:200;letter-spacing:6px;margin:0;">CEREDOLESO PRO</h1></div>', unsafe_allow_html=True)
 
 # --- BLOCCO OGGI ---
@@ -75,6 +79,24 @@ for i in range(1, 4):
     r_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {r_t}</div>' if r_t else ""
     st.markdown(f'<div class="info-card"><div style="font-size:18px;font-weight:bold;">{d_obj.strftime("%d %B")}</div><div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div><div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div><div class="t-main" style="font-size:45px;">{max_t}°</div><div class="t-perc">Percepita: {calcola_percepita(max_t, hum_i)}°</div><div class="val-box"><div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div><div style="color:#FF0;">💧 {hum_i}%</div></div>{r_h}<div style="margin-top:10px;color:{s_c};font-weight:bold;font-size:11px;text-transform:uppercase;">{s_t}</div></div>', unsafe_allow_html=True)
 
+# --- STORICO 10 GIORNI ---
+st.write("---")
+st.subheader("Storico 10 Giorni")
+try:
+    h = dhi['hourly']
+    # Creazione DataFrame per il grafico
+    df_h = pd.DataFrame({
+        'Pioggia (mmx10)': [x*10 for x in h['precipitation']],
+        'Vento (kph)': h['windspeed_10m'],
+        'Asciugatura (W/m2)': [x/50 for x in h['shortwave_radiation']]
+    }, index=pd.to_datetime(h['time']))
+    
+    st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
+    st.caption("Azzurro: Pioggia | Verde: Vento | Giallo: Indice Asciugatura")
+except:
+    st.warning("Dati storici non pronti per il grafico.")
+
+# --- FOOTER ---
 if st.button("Aggiorna Dati"):
     st.cache_data.clear()
     st.rerun()
