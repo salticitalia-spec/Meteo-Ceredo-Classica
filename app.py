@@ -32,29 +32,36 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- CSS ---
+# --- CSS (TITOLO ULTRA-THIN PROFESSIONALE) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
-        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("icona.png");
+        background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 20px; border-radius: 15px; border: 1px solid #333;
-        text-align: center; margin-bottom: 20px;
+        padding: 30px 10px; border-radius: 15px; border: 1px solid #222;
+        text-align: center; margin-bottom: 25px;
     }
+    /* Titolo Ultra-Sottile Professionale */
+    .banner-title { 
+        color: #0FF !important; 
+        font-weight: 100 !important; 
+        font-size: 20px; 
+        letter-spacing: 5px; 
+        margin: 0; 
+        text-transform: uppercase;
+        font-family: sans-serif;
+    }
+    
     .info-card {
         background-color: #0c0c0c; border: 1px solid #222;
         padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
-    /* Titolo Ciano e Piccolo */
-    .banner-title { color: #0FF !important; font-weight: 400; font-size: 18px; letter-spacing: 1.5px; margin: 0; text-transform: uppercase; }
-    
     .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
     .t-perc { font-size: 16px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
     .val-box { display: flex; justify-content: center; gap: 15px; font-size: 17px; margin-top: 10px; }
     [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color:#020202; }
-    .sector-icon { font-size: 1.1em; vertical-align: middle; margin-right: 5px; }
 </style>
 ''', unsafe_allow_html=True)
 
