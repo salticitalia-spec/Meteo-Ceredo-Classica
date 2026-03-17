@@ -43,21 +43,21 @@ def calcola_stato_parete(data_hist):
         return "N.D.", "#333", "Errore sensori."
 
 # --- STILE CSS ---
-css_style = f'''
+css_style = '''
 <style>
-.stApp {{ background-color: #000000 !important; }}
-h1, h2, h3, h4, p, span, div {{ color: #FFFFFF !important; font-family: 'Inter', sans-serif; }}
-.main-banner {{ background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%); padding: 1px; border-radius: 10px; margin-bottom: 25px; }}
-.banner-content {{ background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }}
-.banner-title {{ font-size: 24px; font-weight: 300; letter-spacing: 5px; margin: 0; text-transform: uppercase; }}
-.info-block {{ background-color: #000000; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }}
-.temp-main {{ font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; }}
-.forecast-card {{ background-color: #050505; border: 1px solid #222; padding: 15px; border-radius: 10px; margin-bottom: 8px; }}
-.irr-low {{ color: #FF3131 !important; }}      
-.irr-mid {{ color: #FFFF00 !important; }}      
-.irr-high {{ color: #00FFFF !important; font-weight: 600 !important; }} 
-.hum-alert {{ font-size: 10px; color: #FFA500; text-transform: uppercase; margin-top: 5px; font-weight: bold; }}
-[data-testid="stChart"] {{ border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }}
+.stApp { background-color: #000000 !important; }
+h1, h2, h3, h4, p, span, div { color: #FFFFFF !important; font-family: 'Inter', sans-serif; }
+.main-banner { background: linear-gradient(90deg, #000 0%, #00FFFF 50%, #000 100%); padding: 1px; border-radius: 10px; margin-bottom: 25px; }
+.banner-content { background-color: #000; padding: 12px; border-radius: 9px; text-align: center; }
+.banner-title { font-size: 24px; font-weight: 300; letter-spacing: 5px; margin: 0; text-transform: uppercase; }
+.info-block { background-color: #000000; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+.temp-main { font-size: 52px; font-weight: 200; line-height: 1.2; margin: 10px 0; }
+.forecast-card { background-color: #050505; border: 1px solid #222; padding: 15px; border-radius: 10px; margin-bottom: 8px; }
+.irr-low { color: #FF3131 !important; }      
+.irr-mid { color: #FFFF00 !important; }      
+.irr-high { color: #00FFFF !important; font-weight: 600 !important; } 
+.hum-alert { font-size: 11px; color: #FFA500; text-transform: uppercase; margin-top: 8px; font-weight: bold; letter-spacing: 1px; }
+[data-testid="stChart"] { border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }
 </style>
 '''
 st.markdown(css_style, unsafe_allow_html=True)
@@ -80,9 +80,7 @@ def get_weather_data():
 try:
     dfc, dhi = get_weather_data()
     curr, now = dfc['current_weather'], datetime.now()
-    # Recupero umidità attuale (l'API current_weather non la dà sempre, la prendiamo dall'hourly)
-    idx_now = now.hour
-    curr_hum = dfc['hourly']['relativehumidity_2m'][idx_now]
+    curr_hum = dfc['hourly']['relativehumidity_2m'][now.hour]
     d_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
 except:
     st.error("Errore API"); st.stop()
@@ -90,14 +88,14 @@ except:
 # --- HEADER ---
 st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
 
-# --- REAL-TIME ---
-hum_warning = "⚠️ Rischio Condensa Vajo" if curr_hum > 80 else ""
+# --- REAL-TIME & VAJO ALERT ---
+hum_warning = "⚠️ RISCHIO CONDENSA VAJO MARCIORA" if curr_hum > 80 else ""
 st.markdown(f'''
     <div class="info-block">
         <div style="font-size:14px;color:#AAA!important;">{d_str}</div>
         <div style="font-size:10px;color:#00FFFF!important;letter-spacing:2px;">✨ {get_santo(now)}</div>
         <div class="temp-main">{curr["temperature"]}°</div>
-        <div style="display:flex; justify-content:center; gap:20px; font-size:18px;">
+        <div style="display:flex; justify-content:center; gap:25px; font-size:18px; margin-top:5px;">
             <div style="color:#00FF00!important;">💨 {curr["windspeed"]} <span style="font-size:10px;">km/h</span></div>
             <div style="color:#FFA500!important;">💧 {curr_hum}% <span style="font-size:10px;">UR</span></div>
         </div>
@@ -117,18 +115,17 @@ for i in range(3):
     irr_v = int(dfc['daily']['shortwave_radiation_sum'][i] * 1000)
     i_cl = "irr-low" if irr_v < THRESHOLD_LOW else ("irr-high" if irr_v > THRESHOLD_HIGH else "irr-mid")
     
-    # Media umidità giornaliera per la card (approssimata sulle 24h)
-    start_idx, end_idx = i*24, (i+1)*24
-    avg_hum = int(np.mean(dfc['hourly']['relativehumidity_2m'][start_idx:end_idx]))
+    # Media umidità giornaliera
+    avg_hum = int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     
-    card_html = f'<div class="forecast-card">'
-    card_html += f'<div style="display:flex;justify-content:space-between;"><span>{d_lab}</span><span style="color:#FF3131;">Max {dfc["daily"]["temperature_2m_max"][i]}°</span></div>'
-    card_html += f'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">'
-    card_html += f'<div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>'
-    card_html += f'<div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFA500;">{avg_hum}%</span></div>'
-    card_html += f'<div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>'
-    card_html += f'</div></div>'
-    st.markdown(card_html, unsafe_allow_html=True)
+    card = f'<div class="forecast-card">'
+    card += f'<div style="display:flex;justify-content:space-between;"><span>{d_lab}</span><span style="color:#FF3131;">Max {dfc["daily"]["temperature_2m_max"][i]}°</span></div>'
+    card += f'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">'
+    card += f'<div style="text-align:center;"><span style="color:#555;font-size:9px;">PIOGGIA</span><br><span style="color:#00FFFF;">{dfc["daily"]["precipitation_sum"][i]}mm</span></div>'
+    card += f'<div style="text-align:center;"><span style="color:#555;font-size:9px;">UMIDITÀ</span><br><span style="color:#FFA500;">{avg_hum}%</span></div>'
+    card += f'<div style="text-align:center;"><span style="color:#555;font-size:9px;">IRRAGG.</span><br><span class="{i_cl}">{irr_v} KJ</span></div>'
+    card += f'</div></div>'
+    st.markdown(card, unsafe_allow_html=True)
 
 # --- STORICO ---
 st.write("---")
