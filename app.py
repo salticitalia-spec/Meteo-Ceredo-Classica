@@ -60,35 +60,13 @@ st.markdown(f'''
     .irr-high {{ color: #00FFFF !important; font-weight: 600 !important; }} 
     [data-testid="stChart"] {{ border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }}
     </style>
-    ''', unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
-# --- RECUPERO DATI (FIX SINTASSI) ---
+# --- RECUPERO DATI ---
 @st.cache_data(ttl=3600)
 def get_weather_data():
     lat, lon = 45.6117, 10.9710
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,windspeed_10m_max,shortwave_radiation_sum&timezone=Europe%2FRome"
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=10)
-    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
-    
-    resp_fc = requests.get(url_fc).json()
-    resp_hist = requests.get(url_hist).json()
-    return resp_fc, resp_hist
-
-try:
-    data_fc, data_hist = get_weather_data()
-    curr = data_fc['current_weather']
-    now = datetime.now()
-    data_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
-except Exception as e:
-    st.error("Errore Caricamento API")
-    st.stop()
-
-# --- HEADER ---
-st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">Meteo Ceredoleso Pro</div></div></div>', unsafe_allow_html=True)
-
-# --- REAL-TIME ---
-st.markdown(f"""
-    <div class="info-block">
-        <div style="font-size: 14px; font-weight: 300; color: #AAA !important;">{data_str}</div>
-        <div style="font-size: 10px; color: #00FFFF !important; text-transform: uppercase; letter-spacing
+    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave
