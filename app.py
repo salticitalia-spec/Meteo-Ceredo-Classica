@@ -32,25 +32,25 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- CSS (TITOLO ULTRA-THIN PROFESSIONALE) ---
+# --- CSS (HEADER ULTRA-SLIM & MINIMAL) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
     .main-banner {
-        background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url("icona.png");
+        background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
         background-size: cover; background-position: center;
-        padding: 30px 10px; border-radius: 15px; border: 1px solid #222;
+        padding: 20px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
         text-align: center; margin-bottom: 25px;
     }
-    /* Titolo Ultra-Sottile Professionale */
+    /* Titolo Professionale Ridotto */
     .banner-title { 
         color: #0FF !important; 
         font-weight: 100 !important; 
-        font-size: 20px; 
-        letter-spacing: 5px; 
+        font-size: 16px; 
+        letter-spacing: 7px; 
         margin: 0; 
         text-transform: uppercase;
-        font-family: sans-serif;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     
     .info-card {
@@ -58,7 +58,7 @@ st.markdown('''
         padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
     .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
-    .t-perc { font-size: 16px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
+    .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
     .val-box { display: flex; justify-content: center; gap: 15px; font-size: 17px; margin-top: 10px; }
     [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color:#020202; }
