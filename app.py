@@ -24,11 +24,10 @@ def get_santo(data_obj):
 giorni_ita = {"Monday": "Lunedì", "Tuesday": "Martedì", "Wednesday": "Mercoledì", "Thursday": "Giovedì", "Friday": "Venerdì", "Saturday": "Sabato", "Sunday": "Domenica"}
 mesi_ita = {"March": "Marzo", "April": "Aprile", "May": "Maggio"}
 
-# --- MOSTRO BOVINO INDEX (MODELLO 3 SETTORI: MANGIAFUOCO/TORRE/PECI) ---
+# --- MOSTRO BOVINO INDEX (MODELLO 3 SETTORI) ---
 def calcola_stato_parete(data_hist):
     try:
         pioggia_oraria = data_hist['hourly']['precipitation']
-        # Coefficienti Bosco/Inerzia validati
         recent = sum(pioggia_oraria[-72:])     
         medium = sum(pioggia_oraria[-168:-72])  
         remote = sum(pioggia_oraria[-240:-168]) 
@@ -62,65 +61,4 @@ st.markdown(f"""
     .irr-low {{ color: #FF3131 !important; }}      
     .irr-mid {{ color: #FFFF00 !important; }}      
     .irr-high {{ color: #00FFFF !important; font-weight: 600 !important; }} 
-    [data-testid="stChart"] {{ border: 1px solid #222; border-radius: 8px; padding: 10px; background-color: #020202; }}
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- RECUPERO DATI ---
-@st.cache_data(ttl=3600)
-def get_weather_data():
-    lat, lon = 45.6117, 10.9710
-    url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,precipitation,windspeed_10m,shortwave_radiation&daily=temperature_2m_max,precipitation_sum,windspeed_10m_max,shortwave_radiation_sum&timezone=Europe%2FRome"
-    end_date = datetime.now().date()
-    start_date = end_date - timedelta(days=10)
-    url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
-    return requests.get(url_fc).json(), requests.get(url_hist).json()
-
-try:
-    data_fc, data_hist = get_weather_data()
-    curr = data_fc['current_weather']
-    now = datetime.now()
-    data_str = f"{giorni_ita.get(now.strftime('%A'))}, {now.strftime('%d')} {mesi_ita.get(now.strftime('%B'))}"
-except:
-    st.error("Errore API.")
-    st.stop()
-
-# --- HEADER ---
-st.markdown('<div class="main-banner"><div class="banner-content"><div class="banner-title">CEREDOLESO PRO</div><div class="banner-desc">previsioni meteo falesia di ceredo</div></div></div>', unsafe_allow_html=True)
-
-# --- REAL-TIME ---
-st.markdown(f"""
-    <div class="info-block">
-        <div style="font-size: 14px; font-weight: 300; color: #AAA !important;">{data_str}</div>
-        <div style="font-size: 10px; color: #00FFFF !important; text-transform: uppercase; letter-spacing: 2px;">✨ {get_santo(now)}</div>
-        <div class="temp-main">{curr['temperature']}°</div>
-        <div style="font-size: 18px; color: #00FF00 !important; font-weight: 300;">💨 {curr['windspeed']} <span style="font-size:12px;">km/h</span></div>
-    </div>
-""", unsafe_allow_html=True)
-
-# --- MOSTRO BOVINO INDEX ---
-stato_t, stato_c, stato_d = calcola_stato_parete(data_hist)
-st.markdown(f"""
-    <div style="background-color: #000; border: 1px solid {stato_c}; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-        <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">Mostro Bovino Index (Modello Bosco)</div>
-        <div style="font-size: 22px; color: {stato_c}; font-weight: bold; letter-spacing: 1px;">{stato_t}</div>
-        <div style="font-size: 11px; color: #888; margin-top: 5px;">{stato_d}</div>
-    </div>
-""", unsafe_allow_html=True)
-
-# --- PREVISIONI 3 GIORNI ---
-st.subheader("Prossimi 3 Giorni")
-for i in range(3):
-    d_obj = datetime.strptime(data_fc['daily']['time'][i], '%Y-%m-%d')
-    d_label = f"{giorni_ita.get(d_obj.strftime('%A'))} {d_obj.strftime('%d')}"
-    irraggiamento_kj = int(data_fc['daily']['shortwave_radiation_sum'][i] * 1000)
-    irr_class = "irr-low" if irraggiamento_kj < THRESHOLD_LOW else ("irr-high" if irraggiamento_kj > THRESHOLD_HIGH else "irr-mid")
-    
-    st.markdown(f"""
-        <div class="forecast-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div><span style="font-size: 16px;">{d_label}</span></div>
-                <div><span style="color:#FF3131;">Max {data_fc['daily']['temperature_2m_max'][i]}°</span></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-                <div style="text-align:center;"><span style="font-size: 9px; color: #555;">PIOGGIA</span>
+    [data-testid="stChart"] {{ border: 1px solid #222; border-radius:
