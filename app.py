@@ -32,49 +32,59 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- 4. CSS (HEADER, DATE E ALERT UNIFORMATI) ---
+# --- 4. CSS (ELIMINAZIONE BLOCCHI BIANCHI) ---
 st.markdown('''
 <style>
-    .stApp { background-color: #000; }
-    .main-banner {
-        background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url("icona.png");
-        background-size: cover; background-position: center;
-        padding: 30px 5px; border-radius: 12px; border: 1px solid #1a1a1a;
-        text-align: center; margin-bottom: 25px;
-        display: flex; justify-content: center; align-items: center;
+    /* Forza sfondo nero su tutta l'app */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background-color: #000000 !important;
     }
-    .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
+    
+    /* Banner Header */
+    .main-banner {
+        background: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url("icona.png");
+        background-size: cover; background-position: center;
+        padding: 30px 10px; border-radius: 12px; border: 1px solid #1a1a1a;
+        text-align: center; margin-bottom: 25px;
+    }
     
     .title-ceredoleso { 
         color: #0FF !important; font-weight: 100 !important; font-size: 26px; 
-        letter-spacing: 7px; margin: 0; text-transform: uppercase; line-height: 1; font-family: sans-serif;
+        letter-spacing: 7px; text-transform: uppercase; font-family: sans-serif;
     }
     .title-pro { 
         color: #0FF !important; font-weight: 100 !important; font-size: 18px; 
-        letter-spacing: 5px; margin-top: 5px; text-transform: uppercase; font-family: sans-serif; opacity: 0.9; 
+        letter-spacing: 5px; text-transform: uppercase; font-family: sans-serif; opacity: 0.8;
+    }
+    
+    /* Card e Testi - Forza assenza di blocchi bianchi */
+    .info-card {
+        background-color: #0c0c0c !important; 
+        border: 1px solid #222 !important;
+        padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 15px;
+        color: white !important;
     }
     
     .date-text { 
         font-family: sans-serif; font-weight: 100 !important; font-size: 24px; 
-        color: #fff; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 5px;
+        color: #ffffff !important; text-transform: uppercase; letter-spacing: 4px;
+        background: transparent !important;
     }
 
-    .info-card {
-        background-color: #0c0c0c; border: 1px solid #222;
-        padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 15px;
-    }
-    .t-main { font-size: 45px; font-weight: bold; color: #fff; margin: 5px 0; }
-    .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
-    .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
-    .val-box { display: flex; justify-content: center; gap: 15px; font-size: 17px; margin-top: 10px; }
-    
-    /* ALERT GIALLO UNIFORMATO */
     .status-alert { 
-        font-size: 11px; color: #FF0; font-weight: bold; margin-top: 10px; 
-        text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif;
+        font-size: 11px; color: #FF0 !important; font-weight: bold; 
+        margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;
+        background: transparent !important; /* Evita il blocco bianco dietro il testo */
+    }
+
+    /* Grafico */
+    [data-testid="stChart"] { 
+        border: 1px solid #222; border-radius: 10px; padding: 10px; 
+        background-color: #050505 !important; 
     }
     
-    [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color:#020202; }
+    /* Rimuove bordi bianchi widget */
+    div[data-testid="stMarkdownContainer"] > p { color: white; }
 </style>
 ''', unsafe_allow_html=True)
 
@@ -96,34 +106,27 @@ dfc, dhi = fetch_data()
 if dfc is None: st.error("Errore API"); st.stop()
 
 # --- 6. HEADER ---
-st.markdown(f'''
-<div class="main-banner">
-    <div class="title-wrapper">
-        <div class="title-ceredoleso">Ceredoleso</div>
-        <div class="title-pro">PRO</div>
-    </div>
-</div>
-''', unsafe_allow_html=True)
+st.markdown('<div class="main-banner"><div class="title-ceredoleso">Ceredoleso</div><div class="title-pro">PRO</div></div>', unsafe_allow_html=True)
 
 # --- 7. OGGI ---
 curr, now = dfc['current_weather'], datetime.now()
 c_temp, c_hum = curr["temperature"], dfc['hourly']['relativehumidity_2m'][now.hour]
 perc_oggi = calcola_percepita(c_temp, c_hum)
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
-rain_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_t}</div>' if rain_t else ""
+rain_h = f'<div style="color:#F31; font-size:11px; font-weight:bold; border:1px solid #F31; padding:4px; border-radius:5px; display:inline-block; margin:10px 0;">🌧️ PIOGGIA: ORE {rain_t}</div>' if rain_t else ""
 msg_oggi = "🔥 AFA ELEVATA" if perc_oggi > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
 
 st.markdown(f'''
 <div class="info-card">
     <div class="date-text">{giorni_ita[now.weekday()]} {now.day} {mesi_ita[now.month-1]}</div>
-    <div style="color:#0FF;font-size:11px;margin-bottom:10px;">✨ {get_santo(now)}</div>
+    <div style="color:#0FF; font-size:11px; margin-bottom:10px;">✨ {get_santo(now)}</div>
     <div style="font-size:50px;">{get_weather_icon(curr["weathercode"])}</div>
-    <div class="t-main">{c_temp}°</div>
-    <div class="t-perc">Percepita: {perc_oggi}°</div>
-    <div class="val-box">
-        <div style="color:#0F0;">💨 {curr["windspeed"]}kph</div>
-        <div style="color:#FF0;">💧 {c_hum}%</div>
-        <div style="color:#0FF;">🌧️ {dfc['daily']['precipitation_sum'][0]}mm</div>
+    <div style="font-size:45px; font-weight:bold; color:#fff;">{c_temp}°</div>
+    <div style="font-size:14px; color:#FF0;">Percepita: {perc_oggi}°</div>
+    <div style="display:flex; justify-content:center; gap:15px; margin-top:15px;">
+        <span style="color:#0F0;">💨 {curr["windspeed"]}kph</span>
+        <span style="color:#FF0;">💧 {c_hum}%</span>
+        <span style="color:#0FF;">🌧️ {dfc['daily']['precipitation_sum'][0]}mm</span>
     </div>
     {rain_h}
     <div class="status-alert">{msg_oggi}</div>
@@ -134,38 +137,26 @@ st.markdown(f'''
 if dhi and 'hourly' in dhi:
     p_hist = dhi['hourly']['precipitation']
     carico = (sum(p_hist[-72:]) * 1.0) + (sum(p_hist[-168:-72]) * 0.7)
-    m_t, m_c, m_d = ("SECCO ☀️", "#0FF", "🟢 Ottimo ovunque.") if carico < 5 else (("UMIDO 💧", "#FF0", "🟡 Peci & Ostramandra umide.") if carico < 18 else ("BAGNATO ⚠️", "#F31", "🔴 Bosco saturo."))
-    st.markdown(f'<div style="border:1px solid {m_c};padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;"><div style="font-size:10px;color:#666;text-transform:uppercase;">Mostro Bovino Index</div><div style="font-size:24px;color:{m_c};font-weight:bold;margin:5px 0;">{m_t}</div><div style="font-size:13px;color:#999;">{m_d}</div></div>', unsafe_allow_html=True)
+    m_t, m_c, m_d = ("SECCO ☀️", "#0FF", "🟢 Ottimo ovunque.") if carico < 5 else (("UMIDO 💧", "#FF0", "🟡 Peci umide.") if carico < 18 else ("BAGNATO ⚠️", "#F31", "🔴 Bosco saturo."))
+    st.markdown(f'<div style="border:1px solid {m_c}; padding:15px; border-radius:12px; text-align:center; margin-bottom:25px; background:#000;"><div style="font-size:10px; color:#666;">Mostro Bovino Index</div><div style="font-size:24px; color:{m_c}; font-weight:bold;">{m_t}</div><div style="font-size:13px; color:#999;">{m_d}</div></div>', unsafe_allow_html=True)
 
 # --- 9. PREVISIONI 3 GG ---
-st.subheader("Prossimi 3 Giorni")
+st.markdown("<h3 style='color:white; font-weight:100; letter-spacing:2px;'>PROSSIMI 3 GIORNI</h3>", unsafe_allow_html=True)
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     max_t, hum_i = dfc['daily']['temperature_2m_max'][i], int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
     msg_i = "🔥 AFA ELEVATA" if calcola_percepita(max_t, hum_i) > 30 else ("⚠️ RISCHIO CONDENSA" if hum_i > 75 else "")
-    rain_ti = get_rain_start(dfc['hourly']['precipitation'], i*24)
-    rain_hi = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_ti}</div>' if rain_ti else ""
     
     st.markdown(f'''
     <div class="info-card">
         <div class="date-text">{giorni_ita[d_obj.weekday()]} {d_obj.day} {mesi_ita[d_obj.month-1]}</div>
-        <div style="color:#0FF;font-size:10px;margin-bottom:5px;">✨ {get_santo(d_obj)}</div>
-        <div style="font-size:40px;">{get_weather_icon(dfc["daily"]["weathercode"][i])}</div>
-        <div class="t-main">{max_t}°</div>
-        <div class="val-box">
-            <div style="color:#0F0;">💨 {dfc["daily"]["windspeed_10m_max"][i]}kph</div>
-            <div style="color:#FF0;">💧 {hum_i}%</div>
-            <div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div>
-        </div>
-        {rain_hi}
         <div class="status-alert">{msg_i}</div>
     </div>
     ''', unsafe_allow_html=True)
 
 # --- 10. STORICO 10 GIORNI ---
 if dhi and 'hourly' in dhi:
-    st.write("---")
-    st.subheader("Storico 10 Giorni")
+    st.markdown("<h3 style='color:white; font-weight:100; letter-spacing:2px;'>STORICO 10 GIORNI</h3>", unsafe_allow_html=True)
     df_h = pd.DataFrame({
         'Pioggia (mmx10)': [x*10 for x in dhi['hourly']['precipitation']],
         'Vento (kph)': dhi['hourly']['windspeed_10m'],
