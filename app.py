@@ -32,7 +32,7 @@ def get_santo(data_obj):
 giorni_ita = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 mesi_ita = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
-# --- 4. CSS (HEADER E DATE UNIFORMATE +20%) ---
+# --- 4. CSS (HEADER, DATE E ALERT UNIFORMATI) ---
 st.markdown('''
 <style>
     .stApp { background-color: #000; }
@@ -44,6 +44,7 @@ st.markdown('''
         display: flex; justify-content: center; align-items: center;
     }
     .title-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
+    
     .title-ceredoleso { 
         color: #0FF !important; font-weight: 100 !important; font-size: 26px; 
         letter-spacing: 7px; margin: 0; text-transform: uppercase; line-height: 1; font-family: sans-serif;
@@ -52,10 +53,12 @@ st.markdown('''
         color: #0FF !important; font-weight: 100 !important; font-size: 18px; 
         letter-spacing: 5px; margin-top: 5px; text-transform: uppercase; font-family: sans-serif; opacity: 0.9; 
     }
+    
     .date-text { 
         font-family: sans-serif; font-weight: 100 !important; font-size: 24px; 
         color: #fff; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 5px;
     }
+
     .info-card {
         background-color: #0c0c0c; border: 1px solid #222;
         padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 15px;
@@ -64,7 +67,13 @@ st.markdown('''
     .t-perc { font-size: 14px; color: #FF0; margin-bottom: 10px; font-weight: 300; }
     .rain-tag { color: #F31; font-size: 11px; font-weight: bold; border: 1px solid #F31; padding: 4px 10px; border-radius: 5px; display: inline-block; margin: 10px 0; }
     .val-box { display: flex; justify-content: center; gap: 15px; font-size: 17px; margin-top: 10px; }
-    .status-alert { font-size: 11px; color: #FF0; font-weight: bold; margin-top: 10px; text-transform: uppercase; }
+    
+    /* ALERT GIALLO UNIFORMATO */
+    .status-alert { 
+        font-size: 11px; color: #FF0; font-weight: bold; margin-top: 10px; 
+        text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif;
+    }
+    
     [data-testid="stChart"] { border: 1px solid #222; border-radius: 10px; padding: 10px; background-color:#020202; }
 </style>
 ''', unsafe_allow_html=True)
@@ -74,28 +83,26 @@ st.markdown('''
 def fetch_data():
     lat, lon = 45.6117, 10.9710
     url_fc = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation,shortwave_radiation,weathercode,windspeed_10m&daily=temperature_2m_max,precipitation_sum,shortwave_radiation_sum,weathercode,windspeed_10m_max&timezone=Europe%2FRome"
-    
-    # Correzione SyntaxError (rimosso punto vagante)
     start_d = (datetime.now() - timedelta(days=11)).strftime('%Y-%m-%d')
     end_d = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    
     url_hi = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_d}&end_date={end_d}&hourly=precipitation,windspeed_10m,shortwave_radiation&timezone=Europe%2FRome"
-    
     try:
         fc_res = requests.get(url_fc).json()
         hi_res = requests.get(url_hi).json()
         return fc_res, hi_res
-    except:
-        return None, None
+    except: return None, None
 
 dfc, dhi = fetch_data()
-if dfc is None:
-    st.error("Errore nel caricamento dati API.")
-    st.stop()
+if dfc is None: st.error("Errore API"); st.stop()
 
 # --- 6. HEADER ---
 st.markdown(f'''
-<div class="main-banner"><div class="title-wrapper"><div class="title-ceredoleso">Ceredoleso</div><div class="title-pro">PRO</div></div></div>
+<div class="main-banner">
+    <div class="title-wrapper">
+        <div class="title-ceredoleso">Ceredoleso</div>
+        <div class="title-pro">PRO</div>
+    </div>
+</div>
 ''', unsafe_allow_html=True)
 
 # --- 7. OGGI ---
@@ -104,7 +111,7 @@ c_temp, c_hum = curr["temperature"], dfc['hourly']['relativehumidity_2m'][now.ho
 perc_oggi = calcola_percepita(c_temp, c_hum)
 rain_t = get_rain_start(dfc['hourly']['precipitation'], 0)
 rain_h = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_t}</div>' if rain_t else ""
-cond_oggi = "🔥 AFA ELEVATA" if perc_oggi > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
+msg_oggi = "🔥 AFA ELEVATA" if perc_oggi > 30 else ("⚠️ RISCHIO CONDENSA" if c_hum > 75 else "")
 
 st.markdown(f'''
 <div class="info-card">
@@ -119,7 +126,7 @@ st.markdown(f'''
         <div style="color:#0FF;">🌧️ {dfc['daily']['precipitation_sum'][0]}mm</div>
     </div>
     {rain_h}
-    <div class="status-alert">{cond_oggi}</div>
+    <div class="status-alert">{msg_oggi}</div>
 </div>
 ''', unsafe_allow_html=True)
 
@@ -135,7 +142,7 @@ st.subheader("Prossimi 3 Giorni")
 for i in range(1, 4):
     d_obj = datetime.strptime(dfc['daily']['time'][i], '%Y-%m-%d')
     max_t, hum_i = dfc['daily']['temperature_2m_max'][i], int(np.mean(dfc['hourly']['relativehumidity_2m'][i*24:(i+1)*24]))
-    cond_i = "🔥 AFA ELEVATA" if calcola_percepita(max_t, hum_i) > 30 else ("⚠️ RISCHIO CONDENSA" if hum_i > 75 else "")
+    msg_i = "🔥 AFA ELEVATA" if calcola_percepita(max_t, hum_i) > 30 else ("⚠️ RISCHIO CONDENSA" if hum_i > 75 else "")
     rain_ti = get_rain_start(dfc['hourly']['precipitation'], i*24)
     rain_hi = f'<div class="rain-tag">🌧️ INIZIO PIOGGIA: ORE {rain_ti}</div>' if rain_ti else ""
     
@@ -151,11 +158,11 @@ for i in range(1, 4):
             <div style="color:#0FF;">🌧️ {dfc["daily"]["precipitation_sum"][i]}mm</div>
         </div>
         {rain_hi}
-        <div class="status-alert">{cond_i}</div>
+        <div class="status-alert">{msg_i}</div>
     </div>
     ''', unsafe_allow_html=True)
 
-# --- 10. STORICO 10 GIORNI (RIPRISTINATO) ---
+# --- 10. STORICO 10 GIORNI ---
 if dhi and 'hourly' in dhi:
     st.write("---")
     st.subheader("Storico 10 Giorni")
@@ -166,6 +173,4 @@ if dhi and 'hourly' in dhi:
     }, index=pd.to_datetime(dhi['hourly']['time']))
     st.line_chart(df_h, color=["#00FFFF", "#00FF00", "#FFFF00"])
 
-if st.button("Aggiorna Dati"):
-    st.cache_data.clear()
-    st.rerun()
+if st.button("Aggiorna"): st.cache_data.clear(); st.rerun()
